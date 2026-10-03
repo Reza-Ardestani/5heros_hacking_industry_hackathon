@@ -2954,3 +2954,152 @@ footer span span {
     grid-template-columns: 1fr;
   }
 }
+
+/* Where to focus next: forecast priority ranking (PriorityPanel) */
+.pr .panel-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pr-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid #edf1f3;
+  border-bottom: 1px solid #edf1f3;
+}
+.pr-stats > div {
+  padding: 16px 22px;
+  border-right: 1px solid #edf1f3;
+}
+.pr-stats > div:last-child {
+  border-right: 0;
+}
+.pr-stats strong {
+  display: block;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 24px;
+  color: #102b36;
+  margin: 3px 0 4px;
+}
+.pr-stats strong small {
+  font-size: 13px;
+  color: #648783;
+  font-weight: 500;
+}
+.pr-stats span {
+  font-size: 11px;
+  color: #819199;
+  line-height: 1.5;
+}
+.pr-note {
+  padding: 12px 22px 4px;
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.pr-note svg {
+  flex: none;
+  color: #967139;
+}
+.pr-table {
+  max-height: 520px;
+  padding: 8px 22px 4px;
+}
+.pr-table td {
+  vertical-align: top;
+}
+.pr-table td strong {
+  color: #102b36;
+  font-weight: 650;
+}
+.pr-sub {
+  display: block;
+  color: #96a8af;
+  font-size: 10px;
+  margin-top: 2px;
+}
+.pr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 4px;
+}
+.pr-chips .text-link {
+  font-size: 10px;
+}
+.pr-range {
+  position: relative;
+  display: block;
+  height: 8px;
+  margin: 3px 0 5px;
+  background: #f0f3f4;
+  border-radius: 4px;
+  min-width: 110px;
+}
+.pr-range i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #b9dcd5;
+  border-radius: 4px;
+}
+.pr-range b {
+  position: absolute;
+  top: -2px;
+  width: 3px;
+  height: 12px;
+  margin-left: -1px;
+  background: #16796c;
+  border-radius: 2px;
+}
+.pr-actions {
+  white-space: nowrap;
+}
+.pr-actions .button {
+  margin: 0 6px 4px 0;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.pr-actions .text-link {
+  display: inline-flex;
+  margin-left: 8px;
+  font-size: 11px;
+}
+.pr-method {
+  padding: 10px 22px 18px;
+  font-size: 11px;
+  color: #758e99;
+  line-height: 1.7;
+}
+.pr-method summary {
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+@media (max-width: 1150px) {
+  .pr-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pr-stats > div {
+    border-bottom: 1px solid #edf1f3;
+  }
+}
+@media (max-width: 780px) {
+  .pr-stats {
+    grid-template-columns: 1fr;
+  }
+  .pr-table {
+    padding: 8px 12px 4px;
+  }
+}
+.pr-actions .pr-sub {
+  white-space: normal;
+  max-width: 240px;
+  margin-bottom: 6px;
+}
+.pr-capped {
+  color: #967139;
+}

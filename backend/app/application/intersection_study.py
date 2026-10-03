@@ -18,6 +18,7 @@ from app.domain.models import IncidentSpec, Intervention, Scenario
 PEAK_HOUR_FACTOR = 0.10  # share of daily volume in the peak hour (assumption)
 PEAK_DIRECTION_FACTOR = 0.55  # share of peak-hour volume in the peak direction (assumption)
 LANE_CAPACITY_VPH = 900  # per-lane design flow used to choose 1-3 synthetic lanes
+MAX_ARTERIAL_VPH = 1800.0  # Scenario.main_vph upper bound for the synthetic arterial
 DEFAULT_INCIDENT_S = 1200  # 20 minutes when no measured durations exist (assumption)
 ALL_OPTIONS = ["signal_control", "incident_clearance", "turn_lane", "turn_ban"]
 EST_SEEDS = (42, 143)
@@ -25,6 +26,11 @@ EST_SEEDS = (42, 143)
 
 def _peak_flow(volume):
     return volume * PEAK_HOUR_FACTOR * PEAK_DIRECTION_FACTOR
+
+
+def fits_arterial_model(volume) -> bool:
+    """Whether build_study can represent this volume without capping (freeways cannot)."""
+    return not volume or _peak_flow(volume) <= MAX_ARTERIAL_VPH
 
 
 def evidence(key):
@@ -85,12 +91,13 @@ def build_study(key):
     else:
         main_vph = 900.0
         assumptions.append("No 2024 volume matched this road; arterial arrivals set to 900 veh/h.")
-    if main_vph > 1800:
+    if main_vph > MAX_ARTERIAL_VPH:
         warnings.append(
-            f"Estimated {main_vph:,.0f} veh/h exceeds the synthetic arterial model (max 1,800); "
-            "capped. Freeway interchanges are not represented by a signalized corridor."
+            f"Estimated {main_vph:,.0f} veh/h exceeds the synthetic arterial model "
+            f"(max {MAX_ARTERIAL_VPH:,.0f}); capped. Freeway interchanges are not represented "
+            "by a signalized corridor."
         )
-    main_vph = max(50.0, min(1800.0, main_vph))
+    main_vph = max(50.0, min(MAX_ARTERIAL_VPH, main_vph))
     lanes = max(1, min(3, math.ceil(main_vph / LANE_CAPACITY_VPH)))
     assumptions.append(f"{lanes} arterial lane(s) per direction (~{LANE_CAPACITY_VPH} veh/h/lane).")
 

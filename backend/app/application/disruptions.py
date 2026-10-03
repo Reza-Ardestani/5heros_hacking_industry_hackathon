@@ -369,6 +369,229 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
     return out
 
 
+# --------------------------------------------------------------- priorities
+PRIORITY_MIN = {"corridor": 10, "intersection": HOTSPOT_MIN}
+RECENT_DAYS = 28  # trend window, and the hold-out window of the ranking check
+TOP_N = 10
+LANE_PRIOR = 10  # pseudo-incidents shrinking a slice's lane-blocking share to the city's
+PRIORITY_SORTS = {
+    "expected": lambda i: -i["expected"],
+    "lane_blocking": lambda i: -i["expected_lane_blocking"],
+    "rising": lambda i: (i["trend"] != "rising", -(i["trend_ratio"] or 0)),
+    "exposure": lambda i: (i["per_10k_daily_vehicles"] is None, -(i["per_10k_daily_vehicles"] or 0)),
+}  # fmt: skip
+PRIORITY_METHOD = (
+    "Each corridor (or intersection) is forecast with the disruption model over the horizon; "
+    "default rank is expected incidents. Expected lane-blocking = expected incidents x the "
+    "slice's lane-blocking share, shrunk toward the citywide share (many records do not "
+    "report lane impact). Recent change compares the slice's share of incidents in the "
+    "last 28 observed days with the citywide share, so citywide shocks such as weather "
+    "cancel out; it is called rising or falling only if an exact binomial test survives a "
+    "10% false-discovery-rate adjustment across all ranked slices. Ranking check: the same "
+    "ranking built only from data before the last 28 days, scored on what then happened."
+)
+
+
+def _spearman(xs, ys):
+    def ranks(v):
+        order = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0.0] * len(v)
+        i = 0
+        while i < len(order):
+            j = i
+            while j + 1 < len(order) and v[order[j + 1]] == v[order[i]]:
+                j += 1
+            for k in range(i, j + 1):
+                r[order[k]] = (i + j) / 2
+            i = j + 1
+        return r
+
+    rx, ry = ranks(xs), ranks(ys)
+    mx, my = sum(rx) / len(rx), sum(ry) / len(ry)
+    cov = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    var = (sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry)) ** 0.5
+    return round(cov / var, 3) if var else None
+
+
+def _ranking_check(groups, city_times, days):
+    """Rank on data before the last RECENT_DAYS observed days; score on those days."""
+    if len(days) < RECENT_DAYS + 56 or len(groups) < TOP_N * 2:
+        return None
+    train, test = days[:-RECENT_DAYS], set(days[-RECENT_DAYS:])
+    train_set = set(train)
+    rows = []
+    for key, times in groups.items():
+        rates = model.fit(times, train, city_times)
+        expected = sum(
+            sum(rates[(d.weekday(), p)] for p in range(len(model.PERIODS))) for d in test
+        )
+        past = sum(1 for t in times if t.date() in train_set)
+        actual = sum(1 for t in times if t.date() in test)
+        rows.append((key, expected, past, actual))
+    total_actual = sum(r[3] for r in rows) or 1
+    actual_top = {r[0] for r in sorted(rows, key=lambda r: -r[3])[:TOP_N]}
+
+    def score(col):
+        top = sorted(rows, key=lambda r: -r[col])[:TOP_N]
+        return {
+            "overlap_with_actual_top": len(actual_top & {r[0] for r in top}),
+            "captured_pct": round(100 * sum(r[3] for r in top) / total_actual, 1),
+        }
+
+    return {
+        "train_days": len(train),
+        "test_start": min(test).isoformat(),
+        "test_end": max(test).isoformat(),
+        "top_n": TOP_N,
+        "forecast": score(1),
+        "past_counts": score(2),
+        "spearman": _spearman([r[1] for r in rows], [r[3] for r in rows]),
+    }
+
+
+def priorities(level="corridor", horizon_days=28, quadrant=ANY, sort="expected", limit=15):
+    """Rank corridors or intersections to study first, with forecast-analysis statistics."""
+    level = "intersection" if level == "intersection" else "corridor"
+    horizon_days = max(1, min(int(horizon_days), MAX_HORIZON_DAYS))
+    sort = sort if sort in PRIORITY_SORTS else "expected"
+    d = _load()
+    # Results depend only on the loaded data and these inputs; sorting happens per request.
+    cache = d.setdefault("_priorities", {})
+    key = (level, horizon_days, quadrant.upper())
+    if key not in cache:
+        cache[key] = _priorities(d, level, horizon_days, quadrant)
+    out = dict(cache[key])
+    out["sort"] = sort
+    out["items"] = sorted(out["items"], key=PRIORITY_SORTS[sort])[: max(1, min(limit, 100))]
+    return out
+
+
+def _priorities(d, level, horizon_days, quadrant):
+    # Local import: intersection_study imports this module.
+    from app.application.intersection_study import fits_arterial_model as fits
+
+    field = "corridor_key" if level == "corridor" else "intersection_key"
+    days, start, city_times = d["observed_days"], d["forecast_start"], d["city_times"]
+    observed = set(days)
+    rows_by = {}
+    for r in d["incidents"]:
+        if r[field] and (not quadrant or r["quadrant"] == quadrant.upper()):
+            rows_by.setdefault(r[field], []).append(r)
+    rows_by = {k: v for k, v in rows_by.items() if len(v) >= PRIORITY_MIN[level]}
+    groups = {k: [model_time(r) for r in v] for k, v in rows_by.items()}
+
+    phi = model.dispersion(city_times, days)
+    recent = set(days[-RECENT_DAYS:])
+    city_n = sum(1 for t in city_times if t.date() in observed)
+    city_recent_share = sum(1 for t in city_times if t.date() in recent) / (city_n or 1)
+    city_lane_share = sum((r["lane_impact_level"] or 0) >= 1 for r in d["incidents"]) / len(
+        d["incidents"]
+    )
+    city_rates = model.fit(city_times, days, city_times)
+    city_lams = model.daily_expected(city_rates, start, horizon_days)
+    city_expected = sum(city_lams)
+    estimates = store().latest_estimates() if level == "intersection" else {}
+
+    items = []
+    for key, rows in rows_by.items():
+        times = groups[key]
+        rates = model.fit(times, days, city_times)
+        lams = model.daily_expected(rates, start, horizon_days)
+        expected = sum(lams)
+        lo, hi = model.nb_interval(expected, model.total_dispersion(lams, phi))
+        n = sum(1 for t in times if t.date() in observed)
+        shift = model.recent_shift(
+            sum(1 for t in times if t.date() in recent), n, city_recent_share
+        )
+        lane_blocking = sum((r["lane_impact_level"] or 0) >= 1 for r in rows)
+        lane_share = (lane_blocking + LANE_PRIOR * city_lane_share) / (len(rows) + LANE_PRIOR)
+        (pw, pp), peak_rate = max(rates.items(), key=lambda kv: kv[1])
+        vols = [r["volume_2024"] for r in rows if r.get("volume_2024")]
+        volume = median(vols) if vols else None
+        spots = Counter(r["intersection_key"] for r in rows if r["intersection_key"])
+        # Busiest hotspot the arterial simulator can represent (freeway interchanges are capped).
+        study_spot = next(
+            (
+                k
+                for k, n in spots.most_common()
+                if n >= HOTSPOT_MIN and fits(d["intersections"][k]["volume_2024"])
+            ),
+            None,
+        )
+        est = estimates.get(key) or {}
+        items.append(
+            {
+                "key": key,
+                "corridor": Counter(r["corridor_key"] for r in rows).most_common(1)[0][0],
+                "quadrants": sorted({r["quadrant"] for r in rows if r["quadrant"]}),
+                "history_incidents": len(rows),
+                "expected": round(expected, 2),
+                "interval_80": [lo, hi],
+                "expected_lane_blocking": round(expected * lane_share, 2),
+                "lane_blocking_pct": round(100 * lane_blocking / len(rows), 1),
+                "lane_impact_reported_pct": round(
+                    100 * sum(r["lane_impact_level"] is not None for r in rows) / len(rows), 1
+                ),
+                "trend": "steady",  # set after the false-discovery-rate adjustment below
+                "trend_direction": shift["direction"],
+                "trend_ratio": shift["ratio"],
+                "trend_p_value": round(shift["p_value"], 4),
+                "peak_window": f"{model.WEEKDAYS[pw]} {model.PERIODS[pp][0]}",
+                "peak_window_share_pct": round(100 * peak_rate / (sum(rates.values()) or 1), 1),
+                "median_volume_2024": volume,
+                "per_10k_daily_vehicles": round(expected / (volume / 10_000), 2) if volume else None,
+                "top_intersections": [k for k, _ in spots.most_common(3)] if level == "corridor" else [],
+                "study_spot": study_spot,
+                "study_spot_incidents": spots[study_spot] if study_spot else 0,
+                "incident_delay_s": est.get("extra_delay_s_per_vehicle"),
+            }
+        )  # fmt: skip
+
+    # Screening dozens of slices at p < 0.05 flags a few by chance; control the FDR.
+    for item, keep in zip(items, model.benjamini_hochberg([i["trend_p_value"] for i in items])):
+        if keep and item["trend_direction"]:
+            item["trend"] = item["trend_direction"]
+    ranked = sorted(items, key=lambda i: -i["expected"])
+    top = ranked[:TOP_N]
+    (cw, cp), _ = max(city_rates.items(), key=lambda kv: kv[1])
+    backtest = model.backtest(city_times, days, city_times)
+    return {
+        "level": level,
+        "horizon_days": horizon_days,
+        "forecast_start": start.isoformat(),
+        "quadrant": quadrant.upper() if quadrant else None,
+        "min_incidents": PRIORITY_MIN[level],
+        "eligible": len(items),
+        "items": items,
+        "analysis": {
+            "citywide_expected": round(city_expected, 1),
+            "citywide_interval_80": list(
+                model.nb_interval(city_expected, model.total_dispersion(city_lams, phi))
+            ),
+            "citywide_peak_window": f"{model.WEEKDAYS[cw]} {model.PERIODS[cp][0]}",
+            "top_n": TOP_N,
+            "top_share_of_citywide_pct": round(
+                100 * sum(i["expected"] for i in top) / (city_expected or 1), 1
+            ),
+            "top_keys": [i["key"] for i in top],
+            "rising": [i["key"] for i in items if i["trend"] == "rising"],
+            "falling": [i["key"] for i in items if i["trend"] == "falling"],
+            "recent_window_days": RECENT_DAYS,
+            "ranking_check": _ranking_check(groups, city_times, days),
+            "calibration": backtest
+            and {
+                "interval_80_coverage_pct": backtest["interval_80_coverage_pct"],
+                "model_daily_mae": backtest["model_daily_mae"],
+                "baseline_daily_mae": backtest["baseline_daily_mae"],
+                "test_days": backtest["test_days"],
+            },
+            "dispersion": round(phi, 4),
+        },
+        "method": PRIORITY_METHOD,
+        "caveat": CAVEAT,
+    }
+
+
 # ------------------------------------------------------------------ history
 def incident_history(route=ANY, intersection=ANY, quadrant=ANY, category=ANY, lane=ANY,
                      direction=ANY, since="", until="", limit=100):  # fmt: skip

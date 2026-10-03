@@ -24,6 +24,7 @@ import { request } from "../lib/api";
 import { number } from "../lib/format";
 import { IncidentDelayCard } from "./IncidentDelayCard";
 import { PredictionPanel, emptySelection, type Selection } from "./PredictionPanel";
+import { PriorityPanel } from "./PriorityPanel";
 
 const LIVE_REFRESH_MS = 60_000;
 // Calgary city-limit bounding box used to place points on the overview map.
@@ -314,6 +315,20 @@ export function IntersectionExplorer({
           ))}
         </div>
       </section>
+
+      <PriorityPanel
+        onForecast={(level, item, horizonDays) => {
+          setPrediction({
+            ...emptySelection,
+            route: item.corridor,
+            intersection: level === "intersection" ? item.key : "",
+            horizon_days: horizonDays,
+          });
+          predictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        onOpenIntersection={focus}
+        onStudy={onStudy}
+      />
 
       <div ref={predictRef}>
         <PredictionPanel

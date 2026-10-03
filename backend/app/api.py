@@ -136,6 +136,17 @@ def disruption_predict(
     )
 
 
+@app.get("/api/disruptions/priorities")
+def disruption_priorities(
+    level: str = "corridor",
+    horizon_days: int = 28,
+    quadrant: str = "",
+    sort: str = "expected",
+    limit: int = 15,
+):
+    return _disruption_data(disruptions.priorities, level, horizon_days, quadrant, sort, limit)
+
+
 @app.get("/api/disruptions/history")
 def disruption_history(
     route: str = "",

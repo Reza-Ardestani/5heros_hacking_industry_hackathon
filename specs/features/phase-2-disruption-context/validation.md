@@ -8,7 +8,8 @@ Execute and record in progress.md:
 - AC-3: `tests/test_disruptions.py` (summary consistency, sorted list, detail
   totals, 404, quadrant filter, offline live fallback).
 - AC-4: `tests/test_forecast.py` (learned weekday pattern beats flat baseline on
-  synthetic history; Poisson interval; endpoint slicing; intersection overrides
+  synthetic history; Poisson and negative-binomial intervals; dispersion
+  estimate; endpoint slicing; intersection overrides
   route; horizon capped at 28).
 - AC-5: real browser walk-through on the dev server with network log review.
 - AC-6/7: `tests/test_disruption_store.py` (cross-feed identity, dedup to latest
@@ -18,6 +19,7 @@ Execute and record in progress.md:
   error on unknown key); streamable-HTTP client probe against a running server.
 - Existing S-BB-1 suite still passes (including real SUMO tests).
 
-Not validated: forecast accuracy beyond one 28-day holdout; parser recall on
+Forecast settings: `scripts/evaluate_forecast.py` (3 x 28-day rolling folds).
+Not validated: forecast accuracy beyond six months of history; parser recall on
 free-text descriptions beyond spot checks; closure history before retrieval; the
 ARM64 image build and any AgentCore/AWS deployment.

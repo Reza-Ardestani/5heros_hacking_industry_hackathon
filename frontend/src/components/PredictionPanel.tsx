@@ -218,7 +218,7 @@ export function PredictionPanel({
               <strong>
                 {result.interval_80[0]}–{result.interval_80[1]}
               </strong>
-              <span>80% Poisson range</span>
+              <span>80% range (negative binomial)</span>
             </div>
             <div>
               <strong>{pct(result.p_at_least_one)}</strong>

@@ -358,3 +358,67 @@ export type Prediction = {
   method: string;
   caveat: string;
 };
+
+export type PriorityItem = {
+  key: string;
+  corridor: string;
+  quadrants: string[];
+  history_incidents: number;
+  expected: number;
+  interval_80: [number, number];
+  expected_lane_blocking: number;
+  lane_blocking_pct: number;
+  lane_impact_reported_pct: number;
+  trend: "rising" | "falling" | "steady";
+  trend_direction: "rising" | "falling" | null;
+  trend_ratio: number | null;
+  trend_p_value: number;
+  peak_window: string;
+  peak_window_share_pct: number;
+  median_volume_2024: number | null;
+  per_10k_daily_vehicles: number | null;
+  top_intersections: string[];
+  study_spot: string | null;
+  study_spot_incidents: number;
+  incident_delay_s: number | null;
+};
+type RankScore = { overlap_with_actual_top: number; captured_pct: number };
+export type Priorities = {
+  level: "corridor" | "intersection";
+  horizon_days: number;
+  forecast_start: string;
+  quadrant: string | null;
+  sort: string;
+  min_incidents: number;
+  eligible: number;
+  items: PriorityItem[];
+  analysis: {
+    citywide_expected: number;
+    citywide_interval_80: [number, number];
+    citywide_peak_window: string;
+    top_n: number;
+    top_share_of_citywide_pct: number;
+    top_keys: string[];
+    rising: string[];
+    falling: string[];
+    recent_window_days: number;
+    ranking_check: {
+      train_days: number;
+      test_start: string;
+      test_end: string;
+      top_n: number;
+      forecast: RankScore;
+      past_counts: RankScore;
+      spearman: number | null;
+    } | null;
+    calibration: {
+      interval_80_coverage_pct: number;
+      model_daily_mae: number;
+      baseline_daily_mae: number;
+      test_days: number;
+    } | null;
+    dispersion: number;
+  };
+  method: string;
+  caveat: string;
+};
