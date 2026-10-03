@@ -16,7 +16,30 @@ queues/travel times are required before any field-benefit claim.
 
 Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 20.19+ or 22+,
 macOS/Linux/Windows supported by the SUMO wheel. Native SUMO was verified on macOS
-arm64; other systems remain untested. Initial setup downloads SUMO and its data.
+arm64 and Windows 11 (x64); other systems remain untested. Initial setup downloads SUMO
+and its data.
+
+**One command, any OS (Windows included, no `make` needed)** — starts the API, the UI and
+the MCP server, installing dependencies on first run:
+
+```sh
+python scripts/dev.py
+```
+
+| What | URL |
+|---|---|
+| UI | http://localhost:5173 |
+| API docs | http://127.0.0.1:8008/docs |
+| MCP endpoint (streamable HTTP, stateless) | http://127.0.0.1:8000/mcp |
+| MCP self-description | http://127.0.0.1:8000/mcp-info (`?check=true` runs a live self-test) |
+| Same, via the API (used by the UI's `mcp-info-ml` tab) | http://127.0.0.1:8008/api/mcp-info |
+
+`python scripts/dev.py --check` starts everything, verifies the UI, API, MCP protocol and
+`mcp-info`, then stops (exit code 1 on any failure). Ports in use? Add
+`--api-port 8108 --web-port 5273 --mcp-port 8100`. Connect Claude Code to the MCP server
+with `claude mcp add --transport http calgary-disruptions http://127.0.0.1:8000/mcp`.
+
+Or, with `make`, step by step:
 
 ```sh
 cd /path/to/5heros_hacking_industry_hackathon
