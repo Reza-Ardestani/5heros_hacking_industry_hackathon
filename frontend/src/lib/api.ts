@@ -2,8 +2,27 @@ export async function request<T>(
   url: string,
   options?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(url, options);
-  const body = await response.json();
+  let response: Response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new Error("Cannot reach the API. Start it with `make api` (port 8008).");
+  }
+  const text = await response.text();
+  let body;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = {};
+  }
+  if (response.ok && !text) {
+    throw new Error("API returned an empty response. Check the API connection.");
+  }
+  if (!response.ok && !text && response.status >= 500) {
+    throw new Error(
+      "API is not responding. Start it with `make api` (port 8008) and retry.",
+    );
+  }
   if (!response.ok) {
     const fields: Record<string, string> = {
       budget_cad: "Capital budget",

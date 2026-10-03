@@ -17,7 +17,7 @@ def binary(name: str) -> str:
     return str(Path(sumo.__file__).parent / "bin" / name)
 
 
-def command(args: list[str], timeout: int = 60):
+def command(args: list[str], timeout: int = 300):
     result = subprocess.run(args, capture_output=True, text=True, timeout=timeout, check=False)
     if result.returncode:
         raise RuntimeError(f"SUMO tool failed: {result.stderr[-1500:]}")
@@ -39,34 +39,55 @@ def make_demand(scenario: Scenario, seed: int, factor: float = 1) -> list[dict]:
                 vehicles.append({"route": route, "axis": axis, "depart": round(clock, 3)})
                 clock += rng.expovariate(rate / 3600)
     vehicles.sort(key=lambda v: (v["depart"], v["route"]))
+    # Left turns at the hotspot junction use their own RNG so arrival times stay
+    # identical to the no-turn study for the same seed.
+    turn_rng = random.Random(seed * 7919 + 1)
     for i, vehicle in enumerate(vehicles):
         vehicle["id"] = f"{vehicle['axis']}_{i}"
+        turning = scenario.turn_share and turn_rng.random() < scenario.turn_share
+        if vehicle["axis"] == "main" and turning:
+            vehicle["route"] += "_left"
     return vehicles
 
 
-def network(directory: Path, intervention: Intervention) -> Path:
+HOTSPOT = 1  # J2, the middle junction, stands in for the studied intersection
+LEFT_PHASE_S = 10
+DETOUR_PENALTY_S = round(400 / 11.11, 1)  # backtrack one 400 m block at cross-street speed
+
+
+def hotspot_control(scenario: Scenario | None, intervention: Intervention) -> str:
+    return intervention.control or (scenario.junction_control if scenario else "signal")
+
+
+def network(directory: Path, intervention: Intervention, scenario: Scenario | None = None) -> Path:
+    control = hotspot_control(scenario, intervention)
     nodes = ET.Element("nodes")
     for node, x, y, kind in [("W", -400, 0, "priority"), ("E", 1200, 0, "priority")]:
         ET.SubElement(nodes, "node", id=node, x=str(x), y=str(y), type=kind)
     for i in range(3):
-        ET.SubElement(nodes, "node", id=f"j{i}", x=str(i * 400), y="0", type="traffic_light")
+        kind = "priority" if i == HOTSPOT and control == "priority" else "traffic_light"
+        ET.SubElement(nodes, "node", id=f"j{i}", x=str(i * 400), y="0", type=kind)
         for side, y in [("N", 300), ("S", -300)]:
             ET.SubElement(nodes, "node", id=f"{side}{i}", x=str(i * 400), y=str(y), type="priority")
     edges = ET.Element("edges")
     chain = ["W", "j0", "j1", "j2", "E"]
+    # Approaches into the hotspot junction: e1 (eastbound) and w2 (westbound).
+    approaches = {"e1": "N1_out", "w2": "S1_out"}
     for i in range(4):
         for direction, origin, dest in [
             ("e", chain[i], chain[i + 1]),
             ("w", chain[i + 1], chain[i]),
         ]:
+            edge_id = f"{direction}{i}"
+            bay = 1 if intervention.turn_lane and edge_id in approaches else 0
             ET.SubElement(
                 edges,
                 "edge",
-                id=f"{direction}{i}",
+                id=edge_id,
                 **{
                     "from": origin,
                     "to": dest,
-                    "numLanes": str(intervention.main_lanes),
+                    "numLanes": str(intervention.main_lanes + bay),
                     "speed": "13.89",
                     "priority": "3",
                 },
@@ -91,6 +112,24 @@ def network(directory: Path, intervention: Intervention) -> Path:
                 )
     ET.ElementTree(nodes).write(directory / "nodes.xml")
     ET.ElementTree(edges).write(directory / "edges.xml")
+    connections = ET.Element("connections")
+    for approach, left_out in approaches.items():
+        through = {"e1": "e2", "w2": "w1"}[approach]
+        if intervention.turn_ban:
+            ET.SubElement(connections, "delete", **{"from": approach, "to": left_out})
+        elif intervention.turn_lane:
+            # Leftmost lane is a dedicated left-turn bay; the others carry through traffic.
+            bay_lane = str(intervention.main_lanes)
+            ET.SubElement(
+                connections, "connection",
+                **{"from": approach, "to": left_out, "fromLane": bay_lane, "toLane": "0"},
+            )  # fmt: skip
+            for lane in range(intervention.main_lanes):
+                ET.SubElement(
+                    connections, "connection",
+                    **{"from": approach, "to": through, "fromLane": str(lane), "toLane": str(lane)},
+                )  # fmt: skip
+    ET.ElementTree(connections).write(directory / "connections.xml")
     net = directory / "network.net.xml"
     command(
         [
@@ -99,6 +138,8 @@ def network(directory: Path, intervention: Intervention) -> Path:
             str(directory / "nodes.xml"),
             "--edge-files",
             str(directory / "edges.xml"),
+            "--connection-files",
+            str(directory / "connections.xml"),
             "--output-file",
             str(net),
             "--no-turnarounds",
@@ -116,17 +157,31 @@ def network(directory: Path, intervention: Intervention) -> Path:
         length = max(int(c.get("linkIndex")) for c in connections) + 1
         main = ["r"] * length
         cross = ["r"] * length
+        left = ["r"] * length
+        protected = intervention.turn_lane and tl.get("id") == f"j{HOTSPOT}"
         for c in connections:
             arterial = c.get("from").startswith(("e", "w"))
-            # This first model has only straight trips. Turns receive permissive
-            # green in their own axis phase; crossing streams never green together.
+            index = int(c.get("linkIndex"))
+            if protected and arterial and c.get("dir") == "l":
+                left[index] = "G"  # protected-only left from the dedicated bay
+                continue
+            # Turns receive permissive green in their own axis phase (yielding to
+            # opposing through traffic); crossing streams never green together.
             state = "G" if c.get("dir") == "s" else "g"
-            (main if arterial else cross)[int(c.get("linkIndex"))] = state
+            (main if arterial else cross)[index] = state
         for child in list(tl):
             tl.remove(child)
         share = intervention.main_green_share
-        for duration, state in [
-            (80 * share, "".join(main)),
+        main_green = 80 * share
+        phases = []
+        if protected:
+            main_green = max(10, main_green - LEFT_PHASE_S)
+            phases += [
+                (LEFT_PHASE_S, "".join(left)),
+                (3, "".join("y" if c == "G" else "r" for c in left)),
+            ]
+        for duration, state in phases + [
+            (main_green, "".join(main)),
             (3, "".join("y" if c in "Gg" else "r" for c in main)),
             (2, "r" * length),
             (80 * (1 - share), "".join(cross)),
@@ -154,28 +209,58 @@ class SumoSimulator:
         demand_hash = hashlib.sha256(json.dumps(demand, sort_keys=True).encode()).hexdigest()
         with tempfile.TemporaryDirectory(prefix="bottleneck_") as temp:
             directory = Path(temp)
-            net = network(directory, intervention)
+            net = network(directory, intervention, scenario)
             network_hash = hashlib.sha256(net.read_bytes()).hexdigest()
             root = ET.Element("routes")
             ET.SubElement(
                 root, "vType", id="car", accel="2.6", decel="4.5", sigma="0.5", length="5"
             )
+            ET.SubElement(root, "vType", id="blocker", length="5", vClass="passenger")
             ET.SubElement(root, "route", id="east", edges="e0 e1 e2 e3")
             ET.SubElement(root, "route", id="west", edges="w3 w2 w1 w0")
+            # Left turns at the hotspot junction; with a ban they use the next junction
+            # and pay a fixed penalty for the one-block backtrack.
+            if intervention.turn_ban:
+                ET.SubElement(root, "route", id="east_left", edges="e0 e1 e2 N2_out")
+                ET.SubElement(root, "route", id="west_left", edges="w3 w2 w1 S0_out")
+            else:
+                ET.SubElement(root, "route", id="east_left", edges="e0 e1 N1_out")
+                ET.SubElement(root, "route", id="west_left", edges="w3 w2 S1_out")
             for i in range(3):
                 ET.SubElement(root, "route", id=f"cross{i}n", edges=f"S{i}_in N{i}_out")
                 ET.SubElement(root, "route", id=f"cross{i}s", edges=f"N{i}_in S{i}_out")
-            for v in demand:
-                ET.SubElement(
-                    root,
-                    "vehicle",
-                    id=v["id"],
-                    route=v["route"],
-                    type="car",
-                    depart=str(v["depart"]),
-                    departLane="best",
-                    departSpeed="max",
+            blockers = []
+            incident = scenario.incident
+            if incident:
+                duration = max(
+                    30, round(incident.duration_s * intervention.incident_duration_factor)
                 )
+                east = incident.direction == "east"
+                edge, rest = ("e1", "e1 e2 e3") if east else ("w2", "w2 w1 w0")
+                for lane in range(incident.lanes_blocked):
+                    blockers.append(
+                        {"id": f"incident_{lane}", "lane": lane, "edge": edge, "route": rest,
+                         "duration": duration}
+                    )  # fmt: skip
+            entries = [(v["depart"], "v", v) for v in demand]
+            entries += [(incident.start_s, "b", b) for b in blockers]
+            for depart, kind, item in sorted(entries, key=lambda e: e[0]):
+                if kind == "v":
+                    ET.SubElement(
+                        root, "vehicle", id=item["id"], route=item["route"], type="car",
+                        depart=str(depart), departLane="best", departSpeed="max",
+                    )  # fmt: skip
+                    continue
+                # A stopped vehicle occupying one lane near the junction = the incident.
+                vehicle = ET.SubElement(
+                    root, "vehicle", id=item["id"], type="blocker", depart=str(depart),
+                    departLane=str(item["lane"]), departSpeed="0", departPos="300",
+                )  # fmt: skip
+                ET.SubElement(vehicle, "route", edges=item["route"])
+                ET.SubElement(
+                    vehicle, "stop", lane=f"{item['edge']}_{item['lane']}", endPos="340",
+                    duration=str(item["duration"]),
+                )  # fmt: skip
             ET.ElementTree(root).write(directory / "routes.xml")
             horizon = scenario.duration_s + 2400
             args = [
@@ -208,7 +293,11 @@ class SumoSimulator:
             if playback:
                 args += ["--fcd-output", str(directory / "fcd.xml"), "--device.fcd.period", "10"]
             command(args)
-            trips = ET.parse(directory / "trips.xml").getroot().findall("tripinfo")
+            trips = [
+                t
+                for t in ET.parse(directory / "trips.xml").getroot().findall("tripinfo")
+                if not t.get("id").startswith("incident_")
+            ]
             inserted = {t.get("id") for t in trips}
             uninserted = [v for v in demand if v["id"] not in inserted]
             delays = {
@@ -216,11 +305,21 @@ class SumoSimulator:
             }
             for v in uninserted:
                 delays[v["id"]] = horizon - v["depart"]
+            penalty = 0.0
+            if intervention.turn_ban:
+                for v in demand:
+                    if v["route"].endswith("_left") and v["id"] in inserted:
+                        delays[v["id"]] += DETOUR_PENALTY_S
+                        penalty += DETOUR_PENALTY_S
             completed = sum(float(t.get("arrival")) >= 0 for t in trips)
             unfinished = len(trips) - completed
 
             def axis_delay(axis):
                 vals = [delays[v["id"]] for v in demand if v["axis"] == axis]
+                return sum(vals) / max(1, len(vals))
+
+            def route_delay(prefix):
+                vals = [delays[v["id"]] for v in demand if v["route"].startswith(prefix)]
                 return sum(vals) / max(1, len(vals))
 
             total = sum(delays.values())
@@ -248,6 +347,11 @@ class SumoSimulator:
                 "departure_delay_s": sum(float(t.get("departDelay")) for t in trips)
                 + sum(horizon - v["depart"] for v in uninserted),
                 "max_queue": max((f["queue_m"] for f in queue_frames), default=0),
+                "east_mean_delay_s": route_delay("east"),
+                "west_mean_delay_s": route_delay("west"),
+                "left_turn_vehicles": sum(v["route"].endswith("_left") for v in demand),
+                "turn_detour_penalty_s": penalty,
+                "incident_blocked_s": blockers[0]["duration"] if blockers else 0,
             }
             frames = []
             if playback:

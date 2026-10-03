@@ -1,0 +1,23 @@
+# MCP server image for Amazon Bedrock AgentCore Runtime (ARM64, 0.0.0.0:8000/mcp,
+# stateless streamable HTTP). Build from the repository root:
+#   docker buildx build --platform linux/arm64 -f backend/Dockerfile.mcp -t calgary-disruptions-mcp --load .
+# The database is seeded from the committed exports at build time. Writes made inside a
+# running container (live sightings, collect_latest_data, saved predictions) are lost when
+# the session ends; production needs an external database (see data/analysis/README.md).
+FROM --platform=linux/arm64 python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BB_DB_PATH=/app/data/db/disruptions.sqlite
+
+WORKDIR /app/backend
+RUN pip install --no-cache-dir "mcp==1.30.0" "tzdata==2025.2"
+
+COPY backend/app ./app
+COPY data/analysis ../data/analysis
+RUN python -c "from app.application import disruptions; s = disruptions.store(); print(s.stats())" \
+    && useradd --create-home --uid 10001 mcp && chown -R mcp /app/data
+USER mcp
+
+EXPOSE 8000
+CMD ["python", "-m", "app.mcp_server", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]

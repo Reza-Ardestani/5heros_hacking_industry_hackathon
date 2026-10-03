@@ -17,6 +17,11 @@ No incident duration, measured flow, worst-congestion ranking or intervention
 impact is inferred from these records. Snapshot data is only context in the UI;
 it does not alter simulation demand or choose the modeled corridor.
 
+## Six-month disruption dataset
+
+Incidents, closures and reference layers for April–October 2026, with JSON,
+Excel, parsing rules and the prediction backtest: [analysis/README.md](analysis/README.md).
+
 ## Traffic flow — required next evidence
 
 [CalTRACS](https://trafficcounts.calgary.ca/) provides City traffic-count studies;

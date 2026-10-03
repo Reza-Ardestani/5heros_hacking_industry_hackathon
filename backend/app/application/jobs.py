@@ -11,14 +11,15 @@ class BusyError(Exception):
 
 
 class JobManager:
-    def __init__(self, planner):
+    def __init__(self, planner, recorder=None):
         self.planner = planner
+        self.recorder = recorder  # optional SimulationRecorder (database + log file)
         self.jobs = {}
         self.lock = Lock()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="traffic-study")
         self.active = False
 
-    def submit(self, scenario):
+    def submit(self, scenario, meta=None):
         with self.lock:
             if self.active:
                 raise BusyError("A simulation is running; wait for it to finish")
@@ -33,7 +34,11 @@ class JobManager:
                 "trace": [],
                 "result": None,
                 "error": None,
+                "meta": meta or {},
             }
+        if self.recorder:
+            public = {k: v for k, v in (meta or {}).items() if k != "context"}
+            self.recorder.start(job_id, scenario.model_dump(), public)
         self.pool.submit(self._run, job_id, scenario)
         return job_id
 
@@ -41,17 +46,28 @@ class JobManager:
         def emit(event):
             with self.lock:
                 self.jobs[job_id]["trace"].append(event)
+            if self.recorder:
+                self.recorder.event(job_id, event)
 
         try:
-            result = self.planner.run(scenario, emit)
+            context = (self.jobs[job_id].get("meta") or {}).get("context")
+            result = (
+                self.planner.run(scenario, emit, context)
+                if context is not None
+                else self.planner.run(scenario, emit)
+            )
             with self.lock:
                 self.jobs[job_id].update(status="completed", result=result)
+            if self.recorder:
+                self.recorder.finish(job_id, result)
         # Job boundary must record even unexpected failures and release its slot.
         except Exception as error:
             logging.getLogger(__name__).exception("Local simulation job failed")
             message = re.sub(r"/(?:Users|private|var|tmp)/[^\s'\"]+", "[local path]", str(error))
             with self.lock:
                 self.jobs[job_id].update(status="failed", error=message[:1800])
+            if self.recorder:
+                self.recorder.fail(job_id, message[:1800])
         finally:
             with self.lock:
                 self.active = False

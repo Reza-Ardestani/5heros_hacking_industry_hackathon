@@ -8,6 +8,8 @@ following RCX catalog's artifact separation; no RCX product IDs/policies copied.
 | UJ-BB-001 | Journey | [planner](user_journeys/planner.md) |
 | US-BB-001 | Stories | [planning](user_stories/planning.md) |
 | DES-BB-001 | Design | [design](design/bottleneck-lab/design.md) |
+| DES-BB-002 | Design | [disruption data, collector, MCP](design/disruption-data/design.md) |
 | D-BB-ARCH-001 | Diagram | [architecture](diagrams/architecture.md) |
 | D-BB-SEQ-001 | Diagram | [run sequence](diagrams/run_sequence.md) |
 | S-BB-1 | Spec | [requirements](../specs/features/phase-1-hackathon-mvp/requirements.md) |
+| S-BB-2 | Spec | [requirements](../specs/features/phase-2-disruption-context/requirements.md) |

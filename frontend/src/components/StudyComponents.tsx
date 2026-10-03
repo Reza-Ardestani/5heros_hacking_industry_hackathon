@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { Alternative, Result, Frame } from "../types";
 import { money, number, names } from "../lib/format";
+import { WhyNotLowest } from "./DecisionExplain";
 
 export function Stat({
   icon,
@@ -77,6 +78,7 @@ export function Decision({
             ? "Both flow stress checks pass."
             : "Stress or feasibility warning: review evidence before proceeding."}
         </p>
+        <WhyNotLowest result={result} />
       </div>
       {onCompare && (
         <button onClick={onCompare}>
