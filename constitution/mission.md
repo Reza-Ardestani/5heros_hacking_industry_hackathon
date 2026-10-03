@@ -11,4 +11,9 @@ validation remains unverified. [Evidence](../organizer_docs/discord/README.md).
 Success: working local end-to-end demo, attributed public incident context,
 explicit demand/network/cost assumptions, fair reference comparison and coded
 revision. No real signal control, citywide/crash-risk claims or deployment.
+
+Extended October 3 at the user's request: six months of attributed City disruption
+data, intersection-level studies (incident-aware simulation, signal/clearance/turn
+options) and incident forecasts, exposed to agents through an MCP server. Incident
+records locate and size disruption; improvements remain modeled, not field-proven.
 [Problem](../docs/problem_statement.md), [stories](../docs/user_stories/planning.md).

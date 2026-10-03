@@ -15,12 +15,15 @@ the City and appends to the database (disable with BB_MCP_ALLOW_COLLECT=0).
 
 import argparse
 import os
+import time
 from typing import Annotated, Literal
 
 import anyio
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import Field
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from app.application import disruptions, intersection_study
 
@@ -43,6 +46,9 @@ Route = Annotated[
     Field(description="Route/corridor key from get_prediction_options, e.g. 'Deerfoot Trail' "
           "or '16 Avenue NE'; empty for all"),
 ]  # fmt: skip
+Latitude = Annotated[float | None, Field(description="Area centre latitude (WGS84)")]
+Longitude = Annotated[float | None, Field(description="Area centre longitude (WGS84)")]
+RadiusM = Annotated[float, Field(ge=0, le=10000, description="Area radius in metres; 0 = none")]
 Intersection = Annotated[
     str, Field(description="Intersection key, e.g. 'Deerfoot Trail & Glenmore Trail SE'")
 ]
@@ -85,9 +91,16 @@ def build_server(host="127.0.0.1", port=8000, stateless=False):
         category: Annotated[str, Field(description="Incident group, e.g. 'Collision'")] = "",
         sort: Literal["incidents", "lane_blocking", "collisions", "recent"] = "incidents",
         limit: Annotated[int, Field(ge=1, le=100)] = 20,
+        lat: Latitude = None,
+        lon: Longitude = None,
+        radius_m: RadiusM = 0,
     ) -> dict:
-        """Rank intersections by reported incidents in the window."""
-        return await _run(disruptions.list_intersections, query, quadrant, category, sort, limit)
+        """Rank intersections by reported incidents in the window, optionally only those
+        within radius_m of (lat, lon)."""
+        return await _run(
+            disruptions.list_intersections, query, quadrant, category, sort, limit, lat, lon,
+            radius_m,
+        )  # fmt: skip
 
     @mcp.tool(annotations=READ)
     async def get_intersection_details(key: Intersection) -> dict:
@@ -109,13 +122,18 @@ def build_server(host="127.0.0.1", port=8000, stateless=False):
         intersection: Intersection = "",
         horizon_days: Annotated[int, Field(ge=1, le=28)] = 7,
         save: Annotated[bool, Field(description="Store the forecast for later scoring")] = True,
+        model: Literal["auto", "flat", "bayes", "lightgbm"] = "auto",
+        lat: Latitude = None,
+        lon: Longitude = None,
+        radius_m: RadiusM = 0,
     ) -> dict:
         """Forecast reported incidents for a selection over the next 1-28 days: expected
         count, 80% range, per-day x period probabilities, likely types/locations, and a
-        28-day backtest against a flat-average baseline (report its verdict)."""
+        28-day backtest against a flat-average baseline (report its verdict). model="auto"
+        uses whichever of flat / empirical-Bayes / LightGBM won on validation days."""
         return await _run(
             disruptions.predict, quadrant, route, direction, lane, category, intersection,
-            horizon_days, save, "mcp",
+            horizon_days, save, "mcp", model, lat, lon, radius_m,
         )  # fmt: skip
 
     @mcp.tool(annotations=READ)
@@ -207,7 +225,128 @@ def build_server(host="127.0.0.1", port=8000, stateless=False):
             raise PermissionError("Collection disabled on this server (BB_MCP_ALLOW_COLLECT=0)")
         return await _run(disruptions.collect_now, include_archive)
 
+    @mcp.custom_route("/mcp-info", methods=["GET"])
+    async def mcp_info(request: Request) -> JSONResponse:
+        """Self-description: every tool with its schema; ?check=true runs a live self-test."""
+        return JSONResponse(await describe(mcp, request.query_params.get("check") == "true"))
+
     return mcp
+
+
+# Read-only tools that are safe and fast to exercise; the others write, call SUMO (~15 s)
+# or fetch from the City API, so they are described but not executed by the self-check.
+def _check_args(key):
+    return {
+        "get_disruption_summary": {},
+        "get_data_status": {},
+        "get_prediction_options": {"route": "Deerfoot Trail"},
+        "search_intersections": {"limit": 3},
+        "get_intersection_details": {"key": key},
+        "predict_disruptions": {"route": "Stoney Trail", "horizon_days": 7, "save": False},
+        "query_incident_history": {"limit": 3},
+        "get_travel_time_history": {"limit": 3},
+        "build_intersection_study": {"key": key},
+        "list_simulation_runs": {"limit": 3},
+    }
+
+
+NOT_SELF_CHECKED = {
+    "estimate_incident_delay": "runs SUMO (~15 s) and writes a cached estimate",
+    "get_live_disruptions": "calls the City API and stores what it sees",
+    "collect_latest_data": "polls the City API and writes to the database",
+    "get_simulation_run": "needs a run id (use list_simulation_runs)",
+}
+
+
+async def describe(mcp, check=False):
+    tools = await mcp.list_tools()
+    results = {}
+    if check:
+        key = (await _run(disruptions.list_intersections, "", "", "", "incidents", 1))["items"][0][
+            "key"
+        ]
+        for name, args in _check_args(key).items():
+            started = time.perf_counter()
+            try:
+                await mcp.call_tool(name, args)
+                results[name] = {
+                    "status": "ok",
+                    "ms": round((time.perf_counter() - started) * 1000),
+                }
+            except Exception as error:  # noqa: BLE001 - reported, not raised
+                results[name] = {"status": "error", "error": f"{type(error).__name__}: {error}"}
+        for name, why in NOT_SELF_CHECKED.items():
+            results[name] = {"status": "not_run", "reason": why}
+    catalog = []
+    for t in tools:
+        a = t.annotations
+        props = (t.inputSchema or {}).get("properties", {})
+        catalog.append(
+            {
+                "name": t.name,
+                "description": " ".join((t.description or "").split()),
+                "read_only": bool(a and a.readOnlyHint),
+                "open_world": bool(a and a.openWorldHint),
+                "arguments": {
+                    k: {
+                        "type": v.get("type") or [x.get("type") for x in v.get("anyOf", [])],
+                        "default": v.get("default"),
+                        "description": v.get("description"),
+                        "enum": v.get("enum"),
+                    }
+                    for k, v in props.items()
+                },
+                **({"self_check": results[t.name]} if t.name in results else {}),
+            }
+        )
+    settings = mcp.settings
+    return {
+        "server": {"name": mcp.name, "sdk": f"mcp {_mcp_version()}"},
+        "endpoint": {
+            "path": settings.streamable_http_path,
+            "transport": "streamable-http (stateless)"
+            if settings.stateless_http
+            else "streamable-http",
+            "host": settings.host,
+            "port": settings.port,
+            "agentcore_compatible": settings.stateless_http and settings.port == 8000,
+        },
+        "instructions": INSTRUCTIONS,
+        "tools": catalog,
+        "summary": {
+            "tools": len(catalog),
+            "read_only": sum(t["read_only"] for t in catalog),
+            "writes": sum(not t["read_only"] for t in catalog),
+            **(
+                {
+                    "self_check_ok": sum(r["status"] == "ok" for r in results.values()),
+                    "self_check_errors": sum(r["status"] == "error" for r in results.values()),
+                    "self_check_not_run": sum(r["status"] == "not_run" for r in results.values()),
+                }
+                if check
+                else {}
+            ),
+        },
+        "connect": {
+            "claude_code": "claude mcp add --transport http calgary-disruptions "
+            f"http://{settings.host}:{settings.port}{settings.streamable_http_path}",
+            "inspector": "npx @modelcontextprotocol/inspector (Streamable HTTP)",
+            "python_example": "scripts/mcp_client_demo.py",
+        },
+        "data": await _run(
+            lambda: {
+                k: v
+                for k, v in disruptions.status().items()
+                if k in ("incidents", "closures", "simulation_runs", "last_run_utc", "db_path")
+            }
+        ),
+    }
+
+
+def _mcp_version():
+    import importlib.metadata as md
+
+    return md.version("mcp")
 
 
 def main():

@@ -9,6 +9,12 @@ Amended October 3 at the user's request: Calgary disruption data is stored in
 SQLite (standard library, one local file at data/db/, git-ignored, rebuilt or
 seeded from committed exports). The official `mcp` Python SDK is an optional
 dependency group for the agent tool server. Simulation jobs remain transient.
+Forecasting adds LightGBM (MIT, native API, with NumPy/SciPy) as a competing model; it is
+used only when it wins on validation days against the flat baseline and Bayesian rates.
+No pretrained or hosted models (Hugging Face, LLM APIs) are used; Chronos-2 is a candidate
+to evaluate later in the same harness. Cloud Run deployment files were added by a teammate
+(`Dockerfile`, `.github/workflows/deploy.yml`, `deploy/`); the MCP image is
+`backend/Dockerfile.mcp`.
 
 Backend domain/application/infra/API boundaries explicit; frontend presentation;
 SUMO owns numbers. Public data distinct from assumed flow/geometry/costs.

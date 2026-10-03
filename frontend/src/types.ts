@@ -308,6 +308,7 @@ export type LiveFeed = {
   }[];
   active_closures_at_hotspots: number;
 };
+export type ForecastModel = "flat" | "bayes" | "lightgbm";
 export type Option = { value: string; incidents: number };
 export type PredictOptions = {
   quadrants: Option[];
@@ -352,9 +353,89 @@ export type Prediction = {
     baseline_daily_mae: number;
     improvement_vs_baseline_pct: number | null;
     interval_80_coverage_pct: number;
+    selected_model?: ForecastModel;
+    selected_label?: string;
+    selection_rule?: string;
+    validation_start?: string;
+    validation_end?: string;
+    not_eligible?: ForecastModel[];
+    models?: Record<
+      string,
+      {
+        label: string;
+        validation_daily_mae: number;
+        test_daily_mae: number;
+        test_interval_80_coverage_pct: number;
+        test_expected: number;
+      }
+    >;
   } | null;
+  model?: {
+    name: ForecastModel;
+    label: string;
+    requested: string;
+    eligible: ForecastModel[];
+    note: string | null;
+    feature_importance: Record<string, number> | null;
+  };
   top_intersections: { key: string; incidents: number; expected_in_horizon: number }[];
   low_data: boolean;
   method: string;
   caveat: string;
+};
+export type AreaFocus = {
+  lat: number;
+  lon: number;
+  label: string;
+  key?: string;
+  kind: "hotspot" | "live";
+};
+export type McpTool = {
+  name: string;
+  description: string;
+  read_only: boolean;
+  arguments: Record<string, { default: unknown; description?: string }>;
+  self_check?: { status: "ok" | "error" | "not_run"; ms?: number; reason?: string; error?: string };
+};
+export type McpInfo = {
+  reachable: boolean;
+  probed_url: string;
+  error?: string;
+  how_to_start?: string;
+  server?: { name: string; sdk: string };
+  endpoint?: { path: string; transport: string; host: string; port: number; agentcore_compatible: boolean };
+  tools?: McpTool[];
+  summary?: Record<string, number>;
+  connect?: Record<string, string>;
+};
+export type MlInfo = {
+  task: string;
+  models: {
+    name: string;
+    label: string;
+    type: string;
+    how: string;
+    library?: string;
+    available?: boolean;
+    params?: Record<string, unknown>;
+    rounds?: number;
+    features?: { name: string; meaning: string }[];
+    min_incidents?: number;
+  }[];
+  selection: { validation_days: number; test_days: number; rule: string; metric: string; interval: string };
+  no_external_models: string;
+};
+export type MlBenchmark = {
+  observed_days: number;
+  slices: {
+    slice: string;
+    incidents: number;
+    selected_model: string | null;
+    best_on_test: string;
+    models: Record<string, { validation_mae: number; test_mae: number; test_coverage_pct: number }>;
+    forecast_7d: number;
+    interval_80: [number, number];
+  }[];
+  best_on_test_counts: Record<string, number>;
+  selected_counts: Record<string, number>;
 };

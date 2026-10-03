@@ -13,6 +13,12 @@ export type Selection = {
   category: string;
   intersection: string;
   horizon_days: number;
+  model: "auto" | "flat" | "bayes" | "lightgbm";
+  // Area focus from a map click (circle around a point); null = no area filter.
+  lat?: number | null;
+  lon?: number | null;
+  radius_m?: number | null;
+  area_label?: string | null;
 };
 export const emptySelection: Selection = {
   quadrant: "",
@@ -22,6 +28,7 @@ export const emptySelection: Selection = {
   category: "",
   intersection: "",
   horizon_days: 7,
+  model: "auto",
 };
 const DIRECTIONS: Record<string, string> = {
   NB: "Northbound",
@@ -98,7 +105,9 @@ export function PredictionPanel({
     setBusy(true);
     setError("");
     const params = new URLSearchParams(
-      Object.entries(s).map(([k, v]) => [k, String(v)]),
+      Object.entries(s)
+        .filter(([, v]) => v !== null && v !== undefined)
+        .map(([k, v]) => [k, String(v)]),
     );
     request<Prediction>(`/api/disruptions/predict?${params}`)
       .then((r) => id === latest.current && setResult(r))
@@ -195,11 +204,34 @@ export function PredictionPanel({
             ))}
           </select>
         </label>
+        <label className="px-field">
+          <span>Forecast model</span>
+          <select
+            value={s.model}
+            onChange={(e) => set({ model: e.target.value as Selection["model"] })}
+          >
+            <option value="auto">Auto (best on validation)</option>
+            <option value="lightgbm">LightGBM (ML)</option>
+            <option value="bayes">Weekday × period rates</option>
+            <option value="flat">Flat average (baseline)</option>
+          </select>
+        </label>
         <button className="button primary px-run" onClick={run} disabled={busy}>
           {busy ? <Loader2 size={16} className="spin" /> : <LineChart size={16} />}
           Generate prediction
         </button>
       </div>
+      {s.lat != null && s.radius_m ? (
+        <p className="px-area">
+          Area filter: within {s.radius_m / 1000} km of {s.area_label || "the selected point"}
+          <button
+            className="text-link"
+            onClick={() => set({ lat: null, lon: null, radius_m: null, area_label: null })}
+          >
+            clear area
+          </button>
+        </p>
+      ) : null}
       {error && <p className="incident-caution">{error}</p>}
       {result && (
         <div className="px-result">
@@ -284,6 +316,44 @@ export function PredictionPanel({
             </div>
             <div>
               <h3>Is the model better than a simple average?</h3>
+              {result.model && (
+                <p className="px-model">
+                  Forecast by <strong>{result.model.label}</strong>
+                  {result.model.requested === "auto" ? " · chosen on validation days" : " · forced"}
+                  {result.model.note ? ` · ${result.model.note}` : ""}
+                </p>
+              )}
+              {bt?.models && (
+                <table className="px-models">
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Validation MAE</th>
+                      <th>Test MAE</th>
+                      <th>80% hit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(bt.models).map(([name, m]) => (
+                      <tr key={name} className={name === bt.selected_model ? "selected" : ""}>
+                        <td>
+                          {m.label}
+                          {name === bt.selected_model ? " ✓" : ""}
+                        </td>
+                        <td>{m.validation_daily_mae}</td>
+                        <td>{m.test_daily_mae}</td>
+                        <td>{m.test_interval_80_coverage_pct}%</td>
+                      </tr>
+                    ))}
+                    {(bt.not_eligible ?? []).map((n) => (
+                      <tr key={n} className="muted-row">
+                        <td>{n === "lightgbm" ? "LightGBM" : n}</td>
+                        <td colSpan={3}>Too few incidents in this selection to train</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
               {bt ? (
                 <table className="px-backtest">
                   <tbody>
@@ -302,7 +372,7 @@ export function PredictionPanel({
                       </td>
                     </tr>
                     <tr>
-                      <td>Daily error, model</td>
+                      <td>Daily error, {bt.selected_model ?? "model"}</td>
                       <td>{bt.model_daily_mae} incidents/day (MAE)</td>
                     </tr>
                     <tr>

@@ -52,3 +52,24 @@ def test_predict_endpoint_slices_and_intersection_overrides_route():
         client.get("/api/disruptions/predict", params={"horizon_days": 99}).json()["horizon_days"]
         == 28
     )
+
+
+def test_lightgbm_is_selected_on_validation_when_it_captures_a_trend():
+    # Incidents rise steadily over 200 days; weekday x period rates average the whole
+    # window, while LightGBM's day_index feature tracks the recent level.
+    days, times = _history(200, lambda d: [8] * (1 + (d - date(2026, 4, 1)).days // 25))
+    bt = forecast.select_and_backtest(times, days, times)
+    models = bt["models"]
+    assert set(models) == {"flat", "bayes", "lightgbm"}
+    assert bt["selected_model"] == "lightgbm"
+    assert models["lightgbm"]["test_daily_mae"] < models["bayes"]["test_daily_mae"]
+    assert bt["validation_end"] < bt["test_start"]  # choice made before the test window
+    out = forecast.forecast(times, days, times, days[-1] + timedelta(1), 7, "lightgbm")
+    assert out["model"]["name"] == "lightgbm" and len(out["days"]) == 7
+
+
+def test_sparse_slices_fall_back_from_lightgbm():
+    days, times = _history(140, lambda d: [8] if d.day == 1 else [])
+    assert "lightgbm" not in forecast.eligible_models(times, days)
+    bt = forecast.select_and_backtest(times, days, times)
+    assert bt["not_eligible"] == ["lightgbm"] and bt["selected_model"] in ("flat", "bayes")

@@ -1,6 +1,8 @@
+import json
 import os
 import threading
 from contextlib import asynccontextmanager
+from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,10 +94,19 @@ def disruption_summary():
 
 @app.get("/api/disruptions/intersections")
 def disruption_intersections(
-    q: str = "", quadrant: str = "", category: str = "", sort: str = "incidents", limit: int = 40
+    q: str = "",
+    quadrant: str = "",
+    category: str = "",
+    sort: str = "incidents",
+    limit: int = 40,
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_m: float = 0,
 ):
     limit = max(1, min(limit, 200))
-    return _disruption_data(disruptions.list_intersections, q, quadrant, category, sort, limit)
+    return _disruption_data(
+        disruptions.list_intersections, q, quadrant, category, sort, limit, lat, lon, radius_m
+    )
 
 
 @app.get("/api/disruptions/intersection")
@@ -121,7 +132,16 @@ def disruption_predict(
     intersection: str = "",
     horizon_days: int = 7,
     save: bool = False,
+    model: str = "auto",
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_m: float = 0,
+    area_label: str = "",
 ):
+    if model not in disruptions.FORECAST_MODELS:
+        raise HTTPException(
+            status_code=422, detail=f"model must be one of {disruptions.FORECAST_MODELS}"
+        )
     return _disruption_data(
         disruptions.predict,
         quadrant,
@@ -133,7 +153,40 @@ def disruption_predict(
         horizon_days,
         save,
         "api",
+        model,
+        lat,
+        lon,
+        radius_m,
+        area_label[:120],
     )
+
+
+@app.get("/api/ml-info")
+def ml_info():
+    return disruptions.ml_info()
+
+
+@app.get("/api/ml/benchmark")
+def ml_benchmark():
+    return _disruption_data(disruptions.ml_benchmark)
+
+
+@app.get("/api/mcp-info")
+def mcp_info(check: bool = False):
+    """Describe the MCP server (mirrors its own /mcp-info) and whether it is reachable."""
+    base = os.environ.get("BB_MCP_URL", "http://127.0.0.1:8000").rstrip("/")
+    url = f"{base}/mcp-info" + ("?check=true" if check else "")
+    try:
+        with urlopen(Request(url, headers={"Accept": "application/json"}), timeout=60) as r:
+            info = json.loads(r.read())
+        return {**info, "reachable": True, "probed_url": url}
+    except (OSError, ValueError) as error:
+        return {
+            "reachable": False,
+            "probed_url": url,
+            "error": f"{type(error).__name__}: {error}",
+            "how_to_start": "make mcp-http (serves http://127.0.0.1:8000/mcp)",
+        }
 
 
 @app.get("/api/disruptions/history")
