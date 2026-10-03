@@ -3,7 +3,7 @@
 A working local decision-support prototype for Calgary transportation planning.
 Compare signal retiming and lane-capacity alternatives against an equal-green
 reference, within a capital budget and cross-street delay guardrail. Policy agents
-run actual SUMO simulations, revise an unsafe first proposal, evaluate frozen
+run actual SUMO simulations, revise an ineligible first proposal, evaluate frozen
 plans on paired arrival manifests and export evidence. No trained RL or LLM is
 required for this first experiment.
 
@@ -69,8 +69,13 @@ observed City savings. [Recorded evidence](docs/demo/example_result.json).
 
 - [Organizer sources and changed deadlines](organizer_docs/README.md).
 - [Problem, algorithm and pilot hypothesis](docs/problem_statement.md).
+- [Judge brief](docs/demo/judge_brief.md), [client profile and product research](docs/product_research/README.md),
+  [practitioner discovery plan](docs/product_research/discovery_plan.md).
+- [City data availability](docs/product_research/data_availability.md),
+  [proposed data contract/pipeline](docs/design/data-federation/design.md),
+  [Phase 2 draft](specs/features/phase-2-data-federation/requirements.md). No ingestion DB/agent implemented yet.
 - [User journey](docs/user_journeys/planner.md), [stories](docs/user_stories/planning.md),
-  [modeling index](docs/modeling.md).
+  [budget reviewer journey](docs/user_journeys/budget_reviewer.md), [modeling index](docs/modeling.md).
 - [Design](docs/design/bottleneck-lab/design.md), [architecture](docs/diagrams/architecture.md),
   [execution sequence](docs/diagrams/run_sequence.md).
 - [Constitution](constitution/mission.md), [MVP contract](specs/features/phase-1-hackathon-mvp/requirements.md),

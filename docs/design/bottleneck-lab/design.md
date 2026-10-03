@@ -52,3 +52,13 @@ current tool activity; the review step shows four options, paired delay bars,
 constraint rejection and investment tradeoffs. Inputs can be edited after a run;
 a stale-result notice prevents treating the old recommendation as updated.
 No source-data or statistical limitation is hidden by the guided presentation.
+
+## Product discovery refinement — October 3
+
+[Client profile](../../product_research/ideal_client_profile.md) targets a corridor
+study lead with a program reviewer consuming the evidence. [Research](../../product_research/evidence.md)
+confirms existing engineering tools; recurring workflow pain and differentiation
+remain hypotheses. [Study handoff](../../diagrams/study_journey.md) joins the two
+journeys. The current action space serves corridor comparison, not citywide ranking
+or maintenance investment portfolios. No runtime scope changes follow from this
+desk research; additional model/pilot work requires its own design and spec.

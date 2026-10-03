@@ -6,10 +6,11 @@ explicitly labeled prior-run fallback; never imply they are a live result.
 
 ## Story and timing
 
-1. **0:00–0:40 — Problem/user.** A transportation planner needs an auditable shortlist
-   before spending scarce capital. Existing traffic engineering and simulation
-   tools already exist; our hypothesis is faster preparation, revision and evidence
-   packaging. We have not interviewed City staff or proven a staffing gap.
+1. **0:00–0:40 — Problem/user.** A transportation engineer or consultant study lead
+   compares retiming with added capacity before a program/budget review. Our
+   hypothesis is less repeat work in constrained revision and evidence handoff.
+   Professional tools already exist; no practitioner interview, customer time
+   saving, or gap in those tools has been established. [Judge brief](judge_brief.md).
 2. **0:40–1:15 — Evidence boundary.** Show the attributed Calgary incident snapshot.
    Incidents are disruptions, not traffic flow. Our executable corridor and arrivals
    are synthetic; measured-profile import is available, City flow calibration pending.
@@ -26,12 +27,20 @@ explicitly labeled prior-run fallback; never imply they are a live result.
 6. **4:00–4:35 — Audit.** Download the real JSON report. Point to source hashes,
    per-seed results, assumptions, constraints and honest failures. Show architecture:
    React frontend, FastAPI orchestration, pure domain, SUMO infrastructure adapter.
-7. **4:35–5:00 — Product/pilot.** Proposed customer: City/consultant planning teams.
-   First pilot reproduces one observed corridor study before proposing a change.
-   Monetization and willingness to pay are hypotheses, not signed customers.
+7. **4:35–5:00 — Product/pilot.** Proposed buyer: municipal program owner or consulting
+   practice lead. Validate a recurring task gap, reproduce one observed corridor
+   study, and compare deliverable quality/work time with the existing workflow.
+   Pricing and willingness to pay remain hypotheses. Maintenance portfolio
+   funding requires a different model and is outside this demo.
 
 ## Q&A
 
+- **Why not Synchro or Vissim?** They already optimize/simulate. We are testing a
+  guided constraint/revision/report workflow; superiority and productivity savings
+  have not been benchmarked. [Alternatives](../product_research/evidence.md).
+- **Who confirmed the pain?** Nobody yet. The anecdote does not establish a domain
+  interview. Public research informs the proposed client/workflow; practitioner
+  discovery remains open. [Interview plan](../product_research/discovery_plan.md).
 - **Why no RL?** Weekend environment lacks calibrated ground truth and enough
   training/evaluation. Bounded simulator search provides inspectable action/revision.
   Later compare surrogate optimization or RL against this baseline fairly.

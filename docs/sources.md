@@ -2,6 +2,16 @@
 
 Checked/downloaded October 3, 2026 unless a snapshot says otherwise.
 
+Product desk research, primary-source capabilities and claim boundaries are
+indexed separately in the [evidence ledger](product_research/evidence.md).
+Public sources do not substitute for customer interviews or field calibration.
+
+Data integration investigation: [availability/probe evidence](product_research/data_availability.md),
+[Socrata developer docs](https://dev.socrata.com/),
+[Socrata pagination](https://dev.socrata.com/docs/paging.html),
+[Opendatasoft/Huwise Explore v2.1](https://help.opendatasoft.com/apis/ods-explore-v2/explore_v2.1.html).
+Generic provider APIs were manually probed; an autonomous ingestion agent is proposed.
+
 | Source | Role and limit |
 |---|---|
 | [Organizer evidence index](../organizer_docs/README.md) | Local handbook; immutable lab snapshots; selected authenticated Discord channels |

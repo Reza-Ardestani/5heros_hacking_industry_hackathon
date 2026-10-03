@@ -3,7 +3,13 @@
 Implementation contract settled October 3 under user's early-build authorization.
 External organizer acceptance open. [US-BB-001](../../../docs/user_stories/planning.md),
 [UJ-BB-001](../../../docs/user_journeys/planner.md),
+[UJ-BB-002](../../../docs/user_journeys/budget_reviewer.md),
 [DES-BB-001](../../../docs/design/bottleneck-lab/design.md).
+
+Client/problem grounding: [research index](../../../docs/product_research/README.md).
+Customer journey and productivity claims remain hypotheses. Current application
+compares a specified synthetic corridor; it does not rank City bottlenecks or
+prioritize asset maintenance funding. Research adds no new runtime scope.
 
 FR-1 Attributed Calgary incident snapshot and reproducible refresh, separate from flow.
 FR-2 Real SUMO execution on explicit synthetic corridor/demand; normalized measured

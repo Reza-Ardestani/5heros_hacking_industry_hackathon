@@ -1,0 +1,591 @@
+{
+  "assessment_kind": "bounded direct API probes, not an autonomous ingestion implementation",
+  "checked_at_utc": "2026-10-03T18:51:49.890689+00:00",
+  "limitations": [
+    "Sampled endpoints only; no exhaustive coverage, ingestion or field calibration verified",
+    "SHA256 fingerprints complete HTTP payloads; stored evidence is an extracted subset, not the original payload",
+    "Observation timestamps may be floating local times; timezone and count interval require semantic confirmation",
+    "Earlier all-history aggregate request timed out; no earliest/total-row claim established"
+  ],
+  "probes": [
+    {
+      "name": "calgary_permanent_counts_metadata",
+      "url": "https://data.calgary.ca/api/views/vuyp-sbjp.json",
+      "retrieved_at_utc": "2026-10-03T18:51:48.735493+00:00",
+      "http_status": 200,
+      "sha256": "a263e073bd4fb064232cbb9412106c29e3fbe6202f986148dc10d781dd56c7a1",
+      "status": "success",
+      "evidence": {
+        "name": "Traffic Counts at Permanent stations",
+        "description": "Permanent counts stations are used in trend analysis of traffic patterns around the city.  The stations allow us to create seasonal and weekly variations for traffic data so that we can normalize any portable studies that are of short duration.",
+        "fields": [
+          {
+            "name": "address",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "direction",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "segment_id",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "study_date",
+            "type": "calendar_date",
+            "description": ""
+          },
+          {
+            "name": "study_id",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "volume",
+            "type": "number",
+            "description": ""
+          },
+          {
+            "name": "id",
+            "type": "text",
+            "description": ""
+          }
+        ],
+        "custom_fields": {
+          "License/Attribution": {
+            "License URL": "https://data.calgary.ca/d/Open-Data-Terms/u45n-7awa"
+          },
+          "Data Supplier": {
+            "Organization": "The City of Calgary",
+            "Business Unit": "Mobility"
+          },
+          "Time/Date": {
+            "Update Frequency": "Monthly"
+          },
+          "Geospatial Information": {
+            "Dataset contains geospatial information": "No"
+          }
+        },
+        "license": "SEE_TERMS_OF_USE"
+      }
+    },
+    {
+      "name": "calgary_permanent_counts_latest",
+      "url": "https://data.calgary.ca/resource/vuyp-sbjp.json?%24order=study_date+DESC%2Cid+ASC&%24limit=2",
+      "retrieved_at_utc": "2026-10-03T18:51:48.736135+00:00",
+      "http_status": 200,
+      "sha256": "45a76395d36c67cfe83bfb24cb1f03d46ac3c4ad95b2142503c0bd3fa3a7719b",
+      "status": "success",
+      "evidence": [
+        {
+          "address": "162 AV SE WEST OF MACLEOD TR SE",
+          "direction": "W",
+          "segment_id": "33354",
+          "study_date": "2026-08-31T00:00:00.000",
+          "study_id": "473793",
+          "volume": "0",
+          "id": "33354-2026-08-31T00:00:00"
+        },
+        {
+          "address": "162 AV SE WEST OF MACLEOD TR SE",
+          "direction": "E",
+          "segment_id": "33355",
+          "study_date": "2026-08-31T00:00:00.000",
+          "study_id": "473792",
+          "volume": "0",
+          "id": "33355-2026-08-31T00:00:00"
+        }
+      ]
+    },
+    {
+      "name": "calgary_permanent_counts_nonzero",
+      "url": "https://data.calgary.ca/resource/vuyp-sbjp.json?%24where=volume+%3E+0&%24order=study_date+DESC%2Cid+ASC&%24limit=2",
+      "retrieved_at_utc": "2026-10-03T18:51:48.736231+00:00",
+      "http_status": 200,
+      "sha256": "910393ae6585ed6a95416dfb8d2b8254e16b189b248cc8f32aae01374bd16f58",
+      "status": "success",
+      "evidence": [
+        {
+          "address": "SARCEE TR SW SOUTH OF TRANS CANADA HI SW",
+          "direction": "S",
+          "segment_id": "33446",
+          "study_date": "2026-08-31T00:00:00.000",
+          "study_id": "474374",
+          "volume": "18",
+          "id": "33446-2026-08-31T00:00:00"
+        },
+        {
+          "address": "SARCEE TR SW SOUTH OF TRANS CANADA HI SW",
+          "direction": "N",
+          "segment_id": "33447",
+          "study_date": "2026-08-31T00:00:00.000",
+          "study_id": "474346",
+          "volume": "40",
+          "id": "33447-2026-08-31T00:00:00"
+        }
+      ]
+    },
+    {
+      "name": "calgary_daily_volume_metadata",
+      "url": "https://data.calgary.ca/api/views/cauu-7hnw.json",
+      "retrieved_at_utc": "2026-10-03T18:51:48.736293+00:00",
+      "http_status": 200,
+      "sha256": "036fa225f865eb581659b5a77b35ab6604f7e5198d1bbf2a264ed7e211226596",
+      "status": "success",
+      "evidence": {
+        "name": "Traffic Volumes for 2024",
+        "description": "Average Daily Weekday Traffic (ADWT) is the average number of vehicles in 24 hours adjusted for seasonal variation to represent the average weekday. The number on this map represents two-way totals.\nVolume on Provincial roads are provided by Alberta Transportation as a Weighted Average Annual Daily Traffic(WAADT).\nThis traffic flow map is intended to be a general representation of traffic volumes across the city. Traffic volumes shown are based on 2023 data and may reflect prevailing conditions including construction, detours,\nand operating conditions in place during the year.\nThe City of Calgary provides this information in good faith but provides no warranty, nor accepts any liability arising from any incorrect, incomplete or misleading information or its improper use. If you have any questions, require clarification or would like more details on this data, please call 311.\nAdditional information can be found at: https://www.calgary.ca/planning/transportation/traffic-volume-flow-maps.html\nMore information about Calgary's Traffic Counts system is available at: https://www.calgary.ca/planning/transportation/traffic-counts.html?redirect=/caltracs",
+        "fields": [
+          {
+            "name": "year",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "collection",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "section",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "section_name",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "volume",
+            "type": "number",
+            "description": ""
+          },
+          {
+            "name": "shape_length",
+            "type": "number",
+            "description": ""
+          },
+          {
+            "name": "multilinestring",
+            "type": "multiline",
+            "description": ""
+          }
+        ],
+        "custom_fields": {
+          "License/Attribution": {
+            "License URL": "https://data.calgary.ca/d/Open-Data-Terms/u45n-7awa"
+          },
+          "Data Supplier": {
+            "Organization": "The City of Calgary",
+            "Business Unit": "Mobility"
+          },
+          "Time/Date": {
+            "Update Frequency": "None"
+          },
+          "Geospatial Information": {
+            "Map Projection": "EPSG:4326 WGS84",
+            "Dataset contains geospatial information": "Yes"
+          }
+        },
+        "license": "SEE_TERMS_OF_USE"
+      }
+    },
+    {
+      "name": "calgary_daily_volume_sample",
+      "url": "https://data.calgary.ca/resource/cauu-7hnw.json?%24select=year%2Ccollection%2Csection%2Csection_name%2Cvolume&%24limit=1",
+      "retrieved_at_utc": "2026-10-03T18:51:49.239499+00:00",
+      "http_status": 200,
+      "sha256": "a8f389ad91fa7eae3b729b480f17b37ba747fe95c9a87d144f3face668e466c4",
+      "status": "success",
+      "evidence": [
+        {
+          "year": "2024",
+          "collection": "Segment",
+          "section": "City Section",
+          "section_name": "14STSW1",
+          "volume": "49000.0"
+        }
+      ]
+    },
+    {
+      "name": "calgary_signals_metadata",
+      "url": "https://data.calgary.ca/api/views/qr97-4jvx.json",
+      "retrieved_at_utc": "2026-10-03T18:51:49.262006+00:00",
+      "http_status": 200,
+      "sha256": "502a17af5d6c8332212e819917f95ef26c2b0199bec0d86c6231d850c806255e",
+      "status": "success",
+      "evidence": {
+        "name": "Traffic Signals",
+        "description": "This dataset contains the locations of traffic signals that are maintained by the City of Calgary. For more information, see http://www.calgary.ca/Transportation/Roads/Pages/Traffic/Traffic-signals-and-streetlights/Traffic-signals.aspx",
+        "fields": [
+          {
+            "name": "instdate",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "firstroad",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "secondroad",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "quadrant",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "int_type",
+            "type": "text",
+            "description": "This field identifies the type of traffic signal•Traffic signal: Signalized system that manages traffic flow at an intersection.•Traffic signal T intersection: Traffic signal installed at a T intersection.•1/2 signal: Traffic signal that manages 2 directions of traffic flow.•1/4 signal:  Traffic signal that manages one full direction of traffic flow and one left turn movement in the opposite direction.•Fire signal: Traffic signal that is activated by emergency services.•Overhead Flasher: Pedestrian activated crossing system consisting of overhead and/or side mounted flashing amber beacons.•Pedestrian RRFB: Pedestrian Rectangular Rapid Flashing Beacon (RRFB) is a pedestrian activated crossing system consisting of side mounted flashing beacons that flash in an irregular manner."
+          },
+          {
+            "name": "pedbuttons",
+            "type": "text",
+            "description": "This field describes whether or not the signal is equipped with pedestrian push buttons"
+          },
+          {
+            "name": "ped_timer",
+            "type": "text",
+            "description": "This field describes whether or not the signal is equipped with pedestrian countdown timers that show the duration of time left to finish crossing"
+          },
+          {
+            "name": "accessible_pedestrian_signal",
+            "type": "text",
+            "description": "This field describes whether or not the signal has audible equipment installed to assist pedestrians with visual impairments"
+          },
+          {
+            "name": "latitude",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "longitude",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "point",
+            "type": "point",
+            "description": ""
+          },
+          {
+            "name": "count",
+            "type": "text",
+            "description": ""
+          },
+          {
+            "name": "mistno",
+            "type": "text",
+            "description": "All associated traffic signal signs share this common identifier."
+          },
+          {
+            "name": "unitid",
+            "type": "text",
+            "description": "Unique identifier"
+          }
+        ],
+        "custom_fields": {
+          "License/Attribution": {
+            "License URL": "https://data.calgary.ca/d/Open-Data-Terms/u45n-7awa"
+          },
+          "Additional Information": {
+            "Source URL": "http://www.calgary.ca/Transportation/Roads/Pages/Traffic/Traffic-signals-and-streetlights/Traffic-signals.aspx"
+          },
+          "Data Supplier": {
+            "Organization": "The City of Calgary",
+            "Business Unit": "Mobility"
+          },
+          "Time/Date": {
+            "Update Frequency": "Daily"
+          },
+          "Geospatial Information": {
+            "Map Projection": "WGS84/Web Mercator",
+            "Dataset contains geospatial information": "Yes"
+          }
+        },
+        "license": "SEE_TERMS_OF_USE"
+      }
+    },
+    {
+      "name": "edmonton_daily_volume_metadata",
+      "url": "https://data.edmonton.ca/api/views/b58q-nxjr.json",
+      "retrieved_at_utc": "2026-10-03T18:51:49.287549+00:00",
+      "http_status": 200,
+      "sha256": "e05f2870b743a4e723af1769dd7655ebb9a01e2c6a38ac414e6731ebb1e10219",
+      "status": "success",
+      "evidence": {
+        "name": "Average Annual Weekday Traffic Volumes (2011-2022)",
+        "description": "Actual volumes and estimated volumes are displayed. Estimated volumes are derived from growth factors at permanent counting sites. The growth factors are applied to the most recent actual AAWDT volume at a given location.\r\n\r\nSeasonal Adjustments\r\nVolumes are based on counts of one or two day duration (usually completed between May to June and September to October) and are adjusted to reflect an average weekday during the year. Adjustments are based on variations by time of year measured at permanent count locations that monitor traffic year round.\r\n\r\nYear to Year Volume Changes ‐ Interpretation of Results\r\nAn increase or decrease in volume does not necessarily indicate a trend for a given roadway. Some areas may record a temporary change in volume due to the reconstruction of a roadway link. Although every attempt is made to avoid counting areas while diversions are in effect, some roadway projects affect traffic patterns for a long period of time and are reflected in the counts. For example, the 2011 construction program included Scona Road, the interchange at 23 Avenue/Gateway Boulevard, widening of the Quesnell Bridge, overpasses for major links of the West Anthony Henday, and interchanges for the north Anthony Henday.",
+        "fields": [
+          {
+            "name": "site_number",
+            "type": "number",
+            "description": "A unique identifier for a site location\n"
+          },
+          {
+            "name": "site_name",
+            "type": "text",
+            "description": "Location name where a traffic volume reading was taken"
+          },
+          {
+            "name": "year",
+            "type": "number",
+            "description": "The year the traffic volumes pertain to."
+          },
+          {
+            "name": "average_daily_volume",
+            "type": "text",
+            "description": "The actual or estimated traffic volume value at a given location for a particular year."
+          },
+          {
+            "name": "latitude",
+            "type": "number",
+            "description": "Horizontal spatial location of Site"
+          },
+          {
+            "name": "longitude",
+            "type": "number",
+            "description": "Vertical spatial location of Site"
+          },
+          {
+            "name": "location",
+            "type": "text",
+            "description": "Spatial Location of Site"
+          },
+          {
+            "name": "geometry_point",
+            "type": "point",
+            "description": ""
+          }
+        ],
+        "custom_fields": {
+          "Time Frame": {
+            "Update Frequency": "Annually",
+            "Date Updated": "2023-10-10",
+            "Period of Coverage": "2011-2022",
+            "Automated or Manual": "Manual"
+          },
+          "Administration": {
+            "Job Scheduling": ""
+          },
+          "Spatial": {
+            "Datum": "NAD 83",
+            "Coordinate System": "3TM114-83"
+          },
+          "General Information": {
+            "Internal or External": "Internally Sourced Data ",
+            "Primary Dataset or View": "Primary"
+          },
+          "Quality Indicators": {
+            "Duplicates Removed": "Yes",
+            "Verified for Accuracy": "Yes"
+          }
+        },
+        "license": "SEE_TERMS_OF_USE"
+      }
+    },
+    {
+      "name": "edmonton_speed_metadata",
+      "url": "https://data.edmonton.ca/api/views/auch-8ddj.json",
+      "retrieved_at_utc": "2026-10-03T18:51:49.294620+00:00",
+      "http_status": 200,
+      "sha256": "f1025fd18117d23feb8ac9ccb7f2e63ed4a6202e5b51446e642947562b230356",
+      "status": "success",
+      "evidence": {
+        "name": "Speed Check Sign - DFS041",
+        "description": "Speed Check Sign DFS041\n\nLatitude: 53.544815\nLongitude: -113.565714\n\nThe City has a number of Speed Check Signs (formerly called 'Driver Feedback Signs') installed around the city. These units collect data as traffic approaches them and in some cases may display a message or a speed that is being detected. Also, these units are radar based and can only track one vehicle at a time (strongest signal).\n\nDue to the number of Speed Check Sign installations combined with the volume of data collected, each Speed Check Sign has its own dataset.\n\nDetails of how the data is collected by the Speed Check Sign are as follows:\n- Data is accumulated and reported in 15 minute intervals\n- Vehicle speeds are captured/reported in speed intervals (bins)\n- Speed range/interval for the bins are determined by parameters/settings set for the Speed Check Sign (Minimum/Maximum Speed Detection Setting)\n- Two speed values are recorded for every vehicle - a Highest Speed Detected and a Slowest Speed Detected (explaining why there are two vehicle counts)\n- The bins go from Bin 1 to Bin 10. Bin 1 can also be referred to a LO BIN and Bin 10 can also be referred to as HIGH BIN.\n\nThings to note:\n\nSpeed Check Sign devices are not to be used as or confused with traffic counters, as they are not.\nSpeed Check Sign devices have a minimum detectable speed of approximately 6 km/hr.\nSpeed Check Sign devices have a maximum (theoretical) detectable speed of approximately 225 km/hr.\nSpeed Check Sign devices are programmable with different parameters that can also follow a timed schedule.",
+        "fields": [
+          {
+            "name": "row_id",
+            "type": "text",
+            "description": "System generated ID to eliminate the possibility of duplicate data."
+          },
+          {
+            "name": "site_id",
+            "type": "text",
+            "description": "A unique ID assigned to the location for proper/accurate identification."
+          },
+          {
+            "name": "location_description",
+            "type": "text",
+            "description": "A brief / abbreviated description of the location where the Speed Check Sign unit is located."
+          },
+          {
+            "name": "direction",
+            "type": "text",
+            "description": "The direction of travel of vehicles that are being detected by the Speed Check Sign unit."
+          },
+          {
+            "name": "speed_limit",
+            "type": "number",
+            "description": "The Speed Limit setting for the Speed Check Sign unit. Note: This may not be the enforceable speed for the roadway."
+          },
+          {
+            "name": "speed_unit_of_measure",
+            "type": "text",
+            "description": "The Speed Unit of Measure. Note: The usual setting is KPH but could also be MPH."
+          },
+          {
+            "name": "minimum_speed_detection_setting",
+            "type": "number",
+            "description": "The lowest speed setting for the Speed Check Sign Unit used to determine the speed ranges for each Bin."
+          },
+          {
+            "name": "maximum_speed_detection_setting",
+            "type": "number",
+            "description": "The fastest speed setting for the Speed Check Sign Unit used to determine the speed ranges for each Bin."
+          },
+          {
+            "name": "log_timestamp",
+            "type": "calendar_date",
+            "description": "The Timestamp of when the data was recorded. The time interval between recordings is 15 minutes. Note: It is possible to not have a specific recording of data at a specific Timestamp. This can occur for a number of reasons; however, the data values are still for the 15 minute interval."
+          },
+          {
+            "name": "vehicle_count_for_log_interval",
+            "type": "number",
+            "description": "The number of vehicles that were successfully detected and recorded within the specified parameters. This Vehicle Count is not and should not be correlated to a traffic volume count within the 15 minute interval."
+          },
+          {
+            "name": "speed_range_for_bin",
+            "type": "number",
+            "description": "A calculated value based on (Maximum Speed Detection Setting and Minimum Speed Detection Setting).   NOTE:  - For Bin 1, the minimum detectable speed is approximately 6 KPH. - For Bin 10, the maximum detectable speed is approximately 225 KPH."
+          },
+          {
+            "name": "bin_number",
+            "type": "number",
+            "description": "A value between 1 and 10, representing the data bin for which the vehicle count and the speed range is applicable. Bin 1 records the number of vehicles that were detected to travel in the slowest speed range and Bin 10 would be for the fastest speed range."
+          },
+          {
+            "name": "minimum_speed_for_bin_number",
+            "type": "number",
+            "description": "The slowest detected speed travelled that corresponds to the Bin Number. Vehicles can travel equal to or faster than this speed for it to be recorded for the Bin. NOTE: For Bin 1, the minimum detectable speed is approximately 6 KPH."
+          },
+          {
+            "name": "maximum_speed_for_bin_number",
+            "type": "number",
+            "description": "The fastest detected speed travelled that corresponds to the Bin Number. Vehicles can travel less than or equal to this speed for it to be recorded for the Bin. NOTE: For Bin 10, the maximum detectable speed is approximately 225 KPH."
+          },
+          {
+            "name": "bin_over_speed_limit_flag",
+            "type": "number",
+            "description": "A flag value that indicates the following: 0 - if the both the Minimum Speed and Maximum Speed for the Bin are below the Speed Limit 1 - if the Speed Limit is between the Minimum Speed and Maximum Speed for the Bin 2 - if the value of both the Minimum Speed and Maximum Speed for the Bin are greater than the Speed Limit"
+          },
+          {
+            "name": "vehicle_count_at_slowest_speed_detected",
+            "type": "number",
+            "description": "The number of vehicles counted in the 15 minute time interval where the detected slowest speed of the vehicle was equal to or greater than the Minimum Speed for the Bin and is less than or equal to the Maximum Speed for the Bin."
+          },
+          {
+            "name": "vehicle_count_at_highest_speed_detected",
+            "type": "number",
+            "description": "The number of vehicles counted in the 15 minute time interval where the detected fastest speed of the vehicle was equal to or greater than the Minimum Speed for the Bin and is less than or equal to the Maximum Speed for the Bin."
+          }
+        ],
+        "custom_fields": {
+          "Time Frame": {
+            "Date Made Public": "Sep 30, 2018",
+            "Update Frequency": "Weekly",
+            "Automated or Manual": "Automated"
+          },
+          "Spatial": {
+            "Coordinate System": "LL-WGS84"
+          },
+          "General Information": {
+            "Purpose": "To share with the public the collection of speed data at the various locations throughout Edmonton.",
+            "Internal or External": "Internally Sourced Data ",
+            "Primary Dataset or View": "Primary"
+          },
+          "Quality Indicators": {
+            "Duplicates Removed": "Yes",
+            "Verified for Accuracy": "Yes"
+          }
+        },
+        "license": "SEE_TERMS_OF_USE"
+      }
+    },
+    {
+      "name": "vancouver_movement_metadata",
+      "url": "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets/intersection-traffic-movement-counts",
+      "retrieved_at_utc": "2026-10-03T18:51:49.626633+00:00",
+      "http_status": 200,
+      "sha256": "d49079a0e8020a4ac37badf2f214a3d4ee17a79d9acd694ffd8dda9dbfdf39fe",
+      "status": "success",
+      "evidence": {
+        "name": "intersection-traffic-movement-counts",
+        "description": "<div><p>This dataset contains the locations of intersections with traffic counts and links to collected data. </p><p>Information on traffic counts is collected by staff at intersections and includes detailed  information by lane and direction. </p><p>Traffic information is also collected by automated counters at mid-block locations and focuses on direction specifically. That is found in separate dataset, Directional traffic count locations.</p></div> <h3>Data currency</h3><div><p>This is a static dataset </p></div> <h3>Data accuracy</h3><div><p>The locations are approximate, either in the intersection of two or more streets or along a block between intersections.</p></div> <h3>Websites for further information</h3><div><ul><li><a href=\"https://vancouver.ca/streets-transportation/traffic-count-data.aspx\">​Traffic count data</a></li></ul></div>",
+        "fields": [
+          {
+            "name": "geom",
+            "type": "geo_shape",
+            "description": "Spatial representation of feature"
+          },
+          {
+            "name": "intersection",
+            "type": "text",
+            "description": "Intersection name"
+          },
+          {
+            "name": "url",
+            "type": "text",
+            "description": "Link to page containing intersection movement observations"
+          }
+        ],
+        "custom_fields": {},
+        "license": "Open Government Licence - Vancouver"
+      }
+    },
+    {
+      "name": "vancouver_movement_sample",
+      "url": "https://opendata.vancouver.ca/api/explore/v2.1/catalog/datasets/intersection-traffic-movement-counts/records?limit=2",
+      "retrieved_at_utc": "2026-10-03T18:51:49.627005+00:00",
+      "http_status": 200,
+      "sha256": "04b8f95ee58d9a25fa8b47bb79a2eaf6f0458877c00361328c457f5964910192",
+      "status": "success",
+      "evidence": {
+        "total_count": 659,
+        "results": [
+          {
+            "geom": {
+              "type": "Feature",
+              "geometry": {
+                "coordinates": [
+                  -123.185339038674,
+                  49.2347662583104
+                ],
+                "type": "Point"
+              },
+              "properties": {}
+            },
+            "intersection": "DUNBAR ST AND W 41ST AV",
+            "url": "https://app.vancouver.ca/vanmapmtc_net/#040750"
+          },
+          {
+            "geom": {
+              "type": "Feature",
+              "geometry": {
+                "coordinates": [
+                  -123.185434194405,
+                  49.2306467404517
+                ],
+                "type": "Point"
+              },
+              "properties": {}
+            },
+            "intersection": "DUNBAR ST AND SW MARINE DRIVE",
+            "url": "https://app.vancouver.ca/vanmapmtc_net/#040830"
+          }
+        ]
+      }
+    }
+  ]
+}

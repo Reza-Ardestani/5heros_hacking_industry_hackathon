@@ -95,3 +95,13 @@ has been obtained. Scientific validation requires more seeds and observed baseli
 To verify a fresh download without replacing the demo snapshot:
 `python3 scripts/refresh_incidents.py --output-dir output/refreshed-snapshot`.
 The development verification downloaded 500 rows successfully to that ignored folder.
+
+## New source investigation — not integrated
+
+Direct probes identified public Socrata permanent-station counts `vuyp-sbjp`, with
+direction/segment/study IDs, timestamp and volume; ordered samples reach August
+31, 2026 and metadata says monthly updates. These are a new historical-demand
+candidate; count-bin/timezone semantics and network mapping still need confirmation.
+No new source is connected to the simulator or stored in an ingestion DB.
+[Assessment and cross-city pitfalls](../docs/product_research/data_availability.md),
+[proposed contract](../docs/design/data-federation/data_contract.md).

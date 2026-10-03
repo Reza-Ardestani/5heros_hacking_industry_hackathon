@@ -88,3 +88,32 @@ Re-ran `make test`: 12 passed in 1.44s; Ruff passed. `make build` passed.
 Remote had no branches before this initial commit. Dependencies, generated builds,
 logs, raw OSM and raw Discord excerpts are ignored. Recorded field-calibration,
 organizer-approval and deployment gates remain open.
+
+## Product discovery and judge narrative — October 3
+
+User requested stronger product grounding, client profile, pains, journeys and
+actual application stories. Clarification: the earlier family contact does not
+work in the relevant department; no practitioner interview is established.
+
+- [Research index](../../../docs/product_research/README.md) and ten-source-ID
+  evidence ledger distinguish public facts, prototype evidence and hypotheses.
+  City signal operations/capital planning and incumbent simulation capabilities
+  invalidate the blanket “no solution/random decisions” premise. The proposed
+  workflow gap remains untested. FHWA 2019 PDF fetch failed; only its listing was
+  verified, with calibration detail sourced from the accessible 2014 chapter.
+- Candidate ICP defines engineer/study lead, technical approver, reviewer and
+  proposed buyer. Consultant pilot access, purchasing and pricing are unverified.
+- Engineer and reviewer journeys, separate handoff diagram, eight source-mapped
+  implemented stories and explicitly unimplemented future stories prepared.
+- Judge brief and five-minute script emphasize actual constrained revision,
+  synthetic effect scope and practitioner discovery. Interview/pilot plan includes
+  negative evidence and a separate maintenance-portfolio decision boundary.
+- Constitution, problem, modeling index, design and spec context linked without
+  changing runtime requirements or adding later roadmap features.
+
+Documentation checks: relative links resolve; spec remains exactly four files;
+judge comparison figures match recorded JSON; `git diff --check` passed. Changes
+are Markdown only; organizer originals, data and runtime code unchanged. Existing
+runtime validation above is historical evidence; no new test/build or field/
+customer acceptance is claimed for this documentation pass. Local changes remain
+uncommitted at this checkpoint; no outreach was sent.
