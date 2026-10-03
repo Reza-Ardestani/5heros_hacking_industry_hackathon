@@ -1,4 +1,4 @@
-.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image
+.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image dev dev-check
 setup:
 	cd backend && uv sync --frozen
 	cd frontend && npm ci
@@ -25,3 +25,7 @@ mcp-http:
 	cd backend && uv run --group mcp python -m app.mcp_server --transport streamable-http --host 127.0.0.1 --port 8000
 mcp-image:
 	docker buildx build --platform linux/arm64 -f backend/Dockerfile.mcp -t calgary-disruptions-mcp --load .
+dev:
+	python3 scripts/dev.py
+dev-check:
+	python3 scripts/dev.py --check

@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     BB_DB_PATH=/app/data/db/disruptions.sqlite
 
 WORKDIR /app/backend
-RUN pip install --no-cache-dir "mcp==1.30.0" "tzdata==2025.2"
+RUN pip install --no-cache-dir "mcp==1.30.0" "tzdata==2025.2" "lightgbm==4.7.0"
 
 COPY backend/app ./app
 COPY data/analysis ../data/analysis

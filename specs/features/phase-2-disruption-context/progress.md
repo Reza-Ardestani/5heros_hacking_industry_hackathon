@@ -55,3 +55,21 @@ remaining pair is a true duplicate 25 m apart).
 - Build/push the MCP image and create the AgentCore Runtime; add inbound auth.
 - Durable dynamic data in the cloud needs a managed database behind `Store`.
 - Measured CalTRACS counts still required before simulating a chosen corridor.
+
+## ML forecaster (later October 3)
+
+LightGBM (native API, Poisson objective, deterministic) added as a third model next to the
+flat baseline and Bayesian rates; selection on validation days, scored on unseen test days,
+UI model selector and comparison table, MCP `model` parameter. Real-data result: LightGBM
+best on test for SE, NE, Stoney Trail and Deerfoot & Glenmore; worse on Deerfoot Trail and
+collisions; validation picks Bayes for most slices. Tests: trend case selects LightGBM;
+sparse slices fall back.
+
+## MCP info and area focus (later October 3)
+
+`/mcp-info` on the MCP server (catalog from the live tool list; `?check=true` runs 10 safe
+tools — all ok, 60–350 ms — and lists 4 not run with reasons), mirrored at
+`/api/mcp-info`. Area filter (`lat`, `lon`, `radius_m`) on intersections, predictions and
+the two MCP tools; map dot click focuses 0.5/1/2 km; `mcp-info-ml` tab with per-area model
+comparison, per-model forecasts, LightGBM feature importance, 11-selection benchmark
+(`/api/ml/benchmark`) and MCP status. Browser-verified; 33 tests pass.

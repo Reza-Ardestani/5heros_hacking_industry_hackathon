@@ -106,3 +106,31 @@ def test_live_incident_links_to_its_own_intersection_not_a_nearby_typo(monkeypat
         "hotspot"
     ]
     assert hotspot["key"] == top["key"] and hotspot["match"] == "intersection name"
+
+
+def test_area_filter_limits_list_and_prediction_to_the_radius():
+    from app.domain.geo import dist_m
+
+    client = TestClient(app)
+    top = client.get("/api/disruptions/intersections", params={"limit": 1}).json()["items"][0]
+    area = {"lat": top["latitude"], "lon": top["longitude"], "radius_m": 1000}
+    near = client.get("/api/disruptions/intersections", params={**area, "limit": 200}).json()
+    assert near["total"] >= 1 and near["items"][0]["key"] == top["key"]
+    assert all(
+        dist_m(area["lat"], area["lon"], i["latitude"], i["longitude"]) <= 1000
+        for i in near["items"]
+    )
+    everywhere = client.get("/api/disruptions/predict").json()
+    local = client.get("/api/disruptions/predict", params={**area, "area_label": top["key"]}).json()
+    assert 0 < local["history"]["incidents"] < everywhere["history"]["incidents"]
+    assert local["selection"]["area"] == f"within 1 km of {top['key']}"
+
+
+def test_ml_info_and_benchmark_describe_all_three_models():
+    client = TestClient(app)
+    info = client.get("/api/ml-info").json()
+    assert [m["name"] for m in info["models"]] == ["flat", "bayes", "lightgbm"]
+    assert "Hugging Face" in info["no_external_models"]
+    bench = client.get("/api/ml/benchmark").json()
+    assert len(bench["slices"]) == len(disruptions.BENCHMARK_SLICES)
+    assert sum(bench["best_on_test_counts"].values()) == len(bench["slices"])

@@ -65,3 +65,18 @@ async def test_tools_are_listed_and_callable(seeded_store):
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+@pytest.mark.anyio
+async def test_mcp_info_describes_every_tool_and_self_checks_safe_ones(seeded_store):
+    from app.mcp_server import NOT_SELF_CHECKED, describe
+
+    server = build_server(port=8000, stateless=True)
+    info = await describe(server, check=True)
+    names = {t["name"] for t in info["tools"]}
+    assert names == EXPECTED and info["summary"]["tools"] == len(EXPECTED)
+    assert info["endpoint"]["path"] == "/mcp" and info["endpoint"]["agentcore_compatible"]
+    assert info["summary"]["self_check_errors"] == 0
+    statuses = {t["name"]: t["self_check"]["status"] for t in info["tools"]}
+    assert all(statuses[n] == "not_run" for n in NOT_SELF_CHECKED)
+    assert sum(s == "ok" for s in statuses.values()) == info["summary"]["self_check_ok"] == 10

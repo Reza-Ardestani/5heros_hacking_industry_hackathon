@@ -23,6 +23,7 @@ from app.application.disruption_collector import (
     seed_from_exports,
 )
 from app.domain import forecast as model
+from app.domain import ml_forecast
 from app.domain.geo import PointIndex, dist_m
 from app.infra import city_open_data
 from app.infra.disruption_store import ROOT, Store
@@ -188,6 +189,24 @@ def _build_intersections(incidents, cams):
     return out
 
 
+MAX_RADIUS_M = 10_000
+
+
+def _near(items, lat, lon, radius_m):
+    """Keep records/intersections within radius_m of (lat, lon); no-op without an area."""
+    if lat is None or lon is None or not radius_m:
+        return items
+    radius_m = max(50, min(float(radius_m), MAX_RADIUS_M))
+    return [i for i in items if dist_m(lat, lon, i["latitude"], i["longitude"]) <= radius_m]
+
+
+def _area_label(lat, lon, radius_m, label=""):
+    if lat is None or lon is None or not radius_m:
+        return None
+    where = label or f"{lat:.4f}, {lon:.4f}"
+    return f"within {radius_m / 1000:g} km of {where}"
+
+
 def _public(i):
     return {k: v for k, v in i.items() if not k.startswith("_")}
 
@@ -216,8 +235,9 @@ def full_summary():
     return {**d["summary"], "data_quality": d["data_quality"], "manifest": d["manifest"]}
 
 
-def list_intersections(q="", quadrant="", category="", sort="incidents", limit=40):
-    items = list(_load()["intersections"].values())
+def list_intersections(q="", quadrant="", category="", sort="incidents", limit=40,
+                       lat=None, lon=None, radius_m=0):  # fmt: skip
+    items = _near(list(_load()["intersections"].values()), lat, lon, radius_m)
     if q:
         needle = q.lower()
         items = [i for i in items if needle in i["key"].lower()]
@@ -306,8 +326,14 @@ def options(quadrant=ANY, route=ANY):
     }  # fmt: skip
 
 
+FORECAST_MODELS = ("auto", "flat", "bayes", "lightgbm")
+
+
 def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, intersection=ANY,
-            horizon_days=7, save=False, origin="api"):  # fmt: skip
+            horizon_days=7, save=False, origin="api", model_name="auto",
+            lat=None, lon=None, radius_m=0, area_label=""):  # fmt: skip
+    """Forecast reported incidents. model_name="auto" uses the model chosen on validation
+    days (flat baseline, empirical-Bayes rates or LightGBM); others force that model."""
     d = _load()
     days = d["observed_days"]
     if intersection:
@@ -323,16 +349,32 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
         "intersection_key": intersection,
     }
     rows = [r for r in d["incidents"] if all(not v or r[k] == v for k, v in filters.items())]
+    rows = _near(rows, lat, lon, radius_m)
+    area = _area_label(lat, lon, radius_m, area_label)
     times = [model_time(r) for r in rows]
     horizon_days = max(1, min(int(horizon_days), MAX_HORIZON_DAYS))
     start = d["forecast_start"]
-    result = model.forecast(times, days, d["city_times"], start, horizon_days)
+    if model_name not in FORECAST_MODELS:
+        raise ValueError(f"model must be one of {FORECAST_MODELS}")
+    backtest = model.select_and_backtest(times, days, d["city_times"])
+    eligible = model.eligible_models(times, days)
+    chosen = (
+        (backtest["selected_model"] if backtest else "bayes")
+        if model_name == "auto"
+        else model_name
+    )
+    note = None
+    if chosen not in eligible:
+        note = f"{chosen} needs at least {ml_forecast.MIN_INCIDENTS} incidents; used bayes"
+        chosen = "bayes"
+    result = model.forecast(times, days, d["city_times"], start, horizon_days, chosen)
+    result["model"].update(requested=model_name, eligible=eligible, note=note)
     spots = Counter(r["intersection_key"] for r in rows if r["intersection_key"])
     n_days = len(days)
     selection = {
         k: v
-        for k, v in {"area": quadrant, "route": route, "direction": direction, "lane": lane,
-                     "category": category, "intersection": intersection}.items()
+        for k, v in {"quadrant": quadrant, "route": route, "direction": direction, "lane": lane,
+                     "category": category, "intersection": intersection, "area": area}.items()
         if v
     }  # fmt: skip
     out = {
@@ -355,7 +397,7 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
         "horizon_days": horizon_days,
         **result,
         "periods": [p[0] for p in model.PERIODS],
-        "backtest": model.backtest(times, days, d["city_times"]),
+        "backtest": backtest,
         "top_intersections": [
             {"key": k, "incidents": v, "expected_in_horizon": round(v / n_days * horizon_days, 2)}
             for k, v in spots.most_common(8)
@@ -766,3 +808,129 @@ def live(force=False):
                 "cache_age_s": round(now - _live["at"]),
             }
         return {**data, "cache_age_s": 0}  # fmt: skip
+
+
+# --------------------------------------------------------------------- ML info
+BENCHMARK_SLICES = [
+    ("All Calgary", {}),
+    ("SE quadrant", {"quadrant": "SE"}),
+    ("NE quadrant", {"quadrant": "NE"}),
+    ("NW quadrant", {"quadrant": "NW"}),
+    ("SW quadrant", {"quadrant": "SW"}),
+    ("Collisions", {"category": "Collision"}),
+    ("Deerfoot Trail", {"route": "Deerfoot Trail"}),
+    ("Stoney Trail", {"route": "Stoney Trail"}),
+    ("Glenmore Trail", {"route": "Glenmore Trail"}),
+    ("Deerfoot Trail SB right lane",
+     {"route": "Deerfoot Trail", "direction": "SB", "lane": "Right lane"}),
+    ("Deerfoot Trail & Glenmore Trail SE", {"intersection": "Deerfoot Trail & Glenmore Trail SE"}),
+]  # fmt: skip
+_benchmark: dict = {"version": None, "data": None}
+
+
+def ml_info():
+    """What the forecasting models are, how they are chosen, and their settings."""
+    from app.domain import forecast as fc
+
+    try:
+        import importlib.metadata as md
+
+        lgb_version = md.version("lightgbm")
+    except Exception:  # noqa: BLE001 - optional dependency
+        lgb_version = None
+    return {
+        "task": "Forecast City-reported incidents per day and time-of-day period for any selection",
+        "models": [
+            {
+                "name": "flat",
+                "label": fc.FlatModel.label,
+                "type": "Baseline",
+                "how": "Average incidents per day over the training days.",
+            },
+            {
+                "name": "bayes",
+                "label": fc.BayesModel.label,
+                "type": "Statistical",
+                "how": "Weekday x period rates from the selection's history, shrunk toward the "
+                f"citywide weekly shape with {fc.PRIOR_WEEKS:g} pseudo-weeks (empirical Bayes).",
+            },
+            {
+                "name": "lightgbm",
+                "label": fc.LightGBMModel.label,
+                "type": "Machine learning",
+                "library": f"LightGBM {lgb_version} (Microsoft, MIT licence), native API",
+                "available": ml_forecast.available(),
+                "how": "Gradient-boosted decision trees with a Poisson objective, trained per "
+                "request on the selection's (day, period) counts.",
+                "params": ml_forecast.PARAMS,
+                "rounds": ml_forecast.NUM_ROUNDS,
+                "features": [
+                    {"name": "weekday", "meaning": "Day of week (categorical)"},
+                    {
+                        "name": "period",
+                        "meaning": "Night / AM peak / Midday / PM peak / Evening (categorical)",
+                    },
+                    {"name": "is_weekend", "meaning": "Saturday or Sunday"},
+                    {
+                        "name": "is_holiday",
+                        "meaning": f"Alberta statutory holiday ({len(ml_forecast.HOLIDAYS)} dates listed)",
+                    },
+                    {"name": "day_index", "meaning": "Days since the window start (trend)"},
+                    {
+                        "name": "city_cell_rate",
+                        "meaning": "Citywide mean count for that weekday x period",
+                    },
+                    {"name": "bayes_rate", "meaning": "The empirical-Bayes rate for that cell"},
+                ],
+                "min_incidents": ml_forecast.MIN_INCIDENTS,
+            },
+        ],
+        "selection": {
+            "validation_days": fc.VALIDATION_DAYS,
+            "test_days": fc.TEST_DAYS,
+            "rule": "Pick the model with the lowest daily error on the validation days, then "
+            "report every model on later test days that were not used to choose.",
+            "metric": "Mean absolute error of the daily incident count (MAE)",
+            "interval": "80% negative-binomial range around the expected count (citywide "
+            "overdispersion; daily counts vary more than Poisson allows)",
+        },
+        "periods": [p[0] for p in fc.PERIODS],
+        "no_external_models": "No Hugging Face, LLM or pretrained weights are used.",
+    }
+
+
+def ml_benchmark():
+    """Three-model comparison on standard selections (cached until data changes)."""
+    d = _load()
+    version = _state["version"]
+    if _benchmark["version"] == version and _benchmark["data"]:
+        return _benchmark["data"]
+    rows = []
+    for label, sel in BENCHMARK_SLICES:
+        p = predict(**sel, horizon_days=7)
+        bt = p["backtest"] or {}
+        rows.append(
+            {
+                "slice": label,
+                "selection": sel,
+                "incidents": p["history"]["incidents"],
+                "selected_model": bt.get("selected_model"),
+                "models": {k: {"validation_mae": v["validation_daily_mae"], "test_mae": v["test_daily_mae"],
+                               "test_coverage_pct": v["test_interval_80_coverage_pct"]}
+                           for k, v in (bt.get("models") or {}).items()},
+                "best_on_test": min((bt.get("models") or {"-": {"test_daily_mae": 0}}).items(),
+                                    key=lambda kv: kv[1]["test_daily_mae"])[0],
+                "forecast_7d": p["expected_total"],
+                "interval_80": p["interval_80"],
+            }
+        )  # fmt: skip
+    wins = Counter(r["best_on_test"] for r in rows)
+    data = {
+        "computed_for_data_version": version,
+        "observed_days": len(d["observed_days"]),
+        "slices": rows,
+        "best_on_test_counts": dict(wins),
+        "selected_counts": dict(Counter(r["selected_model"] for r in rows)),
+    }
+    _benchmark.update(version=version, data=data)
+    return data

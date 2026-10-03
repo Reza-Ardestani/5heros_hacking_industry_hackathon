@@ -153,7 +153,18 @@ closures, 6 speed restrictions, 22 other.
 matched 2024 volume when ≥ 5 incidents matched a volume segment. It is a rough
 exposure normalisation (2024 volumes, 2026 incidents), not a crash rate.
 
-## Prediction model (used by the UI)
+## Prediction models (used by the UI)
+
+Three models compete per selection (`backend/app/domain/forecast.py`): flat daily average
+(baseline), weekday × period empirical-Bayes rates, and **LightGBM** Poisson
+gradient-boosted trees (`backend/app/domain/ml_forecast.py`; features: weekday, period,
+weekend, Alberta holiday, trend, citywide cell rate, Bayes rate). The model is chosen on
+the 28 validation days before the 28 test days, then refit on all days. LightGBM needs at
+least 30 incidents in the selection. Test-window daily MAE (flat / Bayes / LightGBM):
+All Calgary 6.86 / 6.12 / 6.20; SE 2.76 / 2.56 / 2.51; Stoney Trail 1.29 / 1.28 / 1.12;
+Deerfoot Trail 1.15 / 1.17 / 1.45; Collisions 2.48 / 2.33 / 2.68. No model wins everywhere.
+
+### Original Bayes-only backtest
 
 `backend/app/domain/forecast.py` forecasts the number of reported incidents for any
 selection of area (quadrant), route, direction, lane, incident type or intersection.
