@@ -143,3 +143,22 @@ def test_sparse_slices_fall_back_from_lightgbm():
     assert "lightgbm" not in forecast.eligible_models(times, days)
     bt = forecast.select_and_backtest(times, days, times)
     assert bt["not_eligible"] == ["lightgbm"] and bt["selected_model"] in ("flat", "bayes")
+
+
+def test_model_choice_needs_consistent_evidence_to_leave_bayes():
+    # Flat has the lower mean error, but the gap swings -3 / +2.8 day to day: not evidence.
+    noisy = {"bayes": [3.0, 1.0] * 28, "flat": [0.0, 3.8] * 28}
+    assert forecast.choose_model(noisy)[0] == "bayes"
+    steady = {"bayes": [2.0, 2.2] * 28, "lightgbm": [1.5, 1.8] * 28, "flat": [2.5, 2.6] * 28}
+    chosen, evidence = forecast.choose_model(steady)
+    assert chosen == "lightgbm" and evidence["challenger"] == "lightgbm"
+    assert evidence["z"] > evidence["threshold_z"]
+    assert forecast.choose_model({"bayes": [1.0] * 10})[0] == "bayes"
+
+
+def test_selection_uses_rolling_windows_before_the_test_window():
+    days, times = _history(184, lambda d: [7, 8] if d.weekday() < 5 else [17])
+    bt = forecast.select_and_backtest(times, days, times)
+    assert bt["validation_folds"] == forecast.VALIDATION_FOLDS
+    assert bt["validation_end"] < bt["test_start"]
+    assert bt["selection_evidence"]["threshold_z"] == forecast.SWITCH_Z

@@ -887,9 +887,14 @@ def ml_info():
         ],
         "selection": {
             "validation_days": fc.VALIDATION_DAYS,
+            "validation_folds": fc.VALIDATION_FOLDS,
             "test_days": fc.TEST_DAYS,
-            "rule": "Pick the model with the lowest daily error on the validation days, then "
-            "report every model on later test days that were not used to choose.",
+            "default_model": fc.DEFAULT_MODEL,
+            "rule": f"Use {fc.DEFAULT_MODEL} unless another model has lower daily error by more "
+            f"than {fc.SWITCH_Z:g} standard errors across {fc.VALIDATION_FOLDS} rolling "
+            f"{fc.VALIDATION_FOLD_DAYS}-day validation windows; then report every model on later "
+            "test days that were not used to choose. Picking the lowest validation error "
+            "outright chased noise (scripts/evaluate_model_selection.py).",
             "metric": "Mean absolute error of the daily incident count (MAE)",
             "interval": "80% negative-binomial range around the expected count (citywide "
             "overdispersion; daily counts vary more than Poisson allows)",

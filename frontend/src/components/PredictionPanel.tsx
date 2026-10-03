@@ -210,7 +210,7 @@ export function PredictionPanel({
             value={s.model}
             onChange={(e) => set({ model: e.target.value as Selection["model"] })}
           >
-            <option value="auto">Auto (best on validation)</option>
+            <option value="auto">Auto (Bayes unless clearly beaten)</option>
             <option value="lightgbm">LightGBM (ML)</option>
             <option value="bayes">Weekday × period rates</option>
             <option value="flat">Flat average (baseline)</option>

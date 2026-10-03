@@ -51,6 +51,7 @@ remaining pair is a true duplicate 25 m apart).
 
 - Overdispersion: done. Negative-binomial ranges with citywide dispersion and prior_weeks=16, chosen by `scripts/evaluate_forecast.py` (3 x 28-day rolling folds, 56 slices). Citywide 80% weekly range coverage 58% -> 83%.
 - Priority ranking: done. `GET /api/disruptions/priorities` and the "Where to focus next" panel (Intersections tab). Hold-out check (rank before Sep 4, score Sep 4-Oct 2): corridors 8/10 of actual top 10, Spearman 0.68; intersections Spearman 0.14, so the UI warns against ranking single intersections. Recent-change flags use a 10% FDR; none currently significant.
+- Model selection: Bayes unless another model is better by >2 standard errors over 4 rolling 14-day validation windows (`scripts/evaluate_model_selection.py`, 56 slices x 3 test windows). Mean regret vs the best model 3.1% -> 2.0%; worst-model picks 69 -> 43 of 168. Glenmore Trail now Bayes (test MAE 0.87) instead of LightGBM (1.00).
 - Run the collector on a schedule (Task Scheduler/cron) to build history; not configured.
 - Build/push the MCP image and create the AgentCore Runtime; add inbound auth.
 - Durable dynamic data in the cloud needs a managed database behind `Store`.

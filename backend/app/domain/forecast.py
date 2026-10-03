@@ -12,9 +12,9 @@ Three competing models, one interface (fit on days -> predict_day(date) = 5 peri
 Ranges and probabilities are negative binomial: citywide daily counts vary about three
 times more than Poisson allows (shared shocks such as weather), so the overdispersion is
 estimated from citywide history and applied around whichever model is used.
-`select_and_backtest` picks the model on validation days inside the training window,
-then scores every model on a later held-out test window that played no part in the
-choice. The forecast uses the selected model refit on all observed days. Forecasts
+`select_and_backtest` keeps Bayes unless another model is clearly better across four
+rolling validation windows inside the training data, then scores every model on a later
+held-out test window that played no part in the choice. The forecast uses the selected model refit on all observed days. Forecasts
 *reported disruptions*, not flow, delay or crash risk, and assume the coming weeks
 resemble the training window. Bayes settings were chosen with
 scripts/evaluate_forecast.py (rolling-origin backtest).
@@ -39,7 +39,14 @@ BASELINE = "Flat daily average over the same training days"
 # steadying sparse routes and intersections; busy slices are nearly unaffected.
 PRIOR_WEEKS = 16.0
 TEST_DAYS = 28
-VALIDATION_DAYS = 28
+# Model selection (scripts/evaluate_model_selection.py, 56 slices x 3 test windows): rolling
+# 4 x 14-day validation with Bayes as the default and a 2-standard-error bar to switch had
+# the lowest regret (2.0% vs 3.1% for one 28-day window and 2.2% for always-Bayes).
+VALIDATION_FOLDS = 4
+VALIDATION_FOLD_DAYS = 14
+VALIDATION_DAYS = VALIDATION_FOLDS * VALIDATION_FOLD_DAYS
+DEFAULT_MODEL = "bayes"
+SWITCH_Z = 2.0
 
 
 def period_of(hour: int) -> int:
@@ -245,42 +252,87 @@ def _score(model, times, eval_days, phi=0.0):
     }
 
 
-def select_and_backtest(times, days, city_times, test_days=TEST_DAYS, val_days=VALIDATION_DAYS):
-    """Choose a model on validation days, then score all models on later unseen test days.
+def _daily_errors(model, actual, eval_days):
+    return [abs(actual.get(d, 0) - sum(model.predict_day(d))) for d in eval_days]
 
-    Timeline: [ inner training | validation (choose) ] [ test (report only) ]
+
+def choose_model(val_errors: dict[str, list[float]], z: float = SWITCH_Z) -> tuple[str, dict]:
+    """Default model unless a challenger beats it by more than z paired standard errors.
+
+    Picking the lowest validation error outright chases noise: in the rolling evaluation
+    (scripts/evaluate_model_selection.py) it chose the worst model in 41% of cases and lost
+    to always using Bayes. Switching needs consistent evidence across validation days.
+    """
+    others = [n for n in val_errors if n != DEFAULT_MODEL]
+    if not others:
+        return DEFAULT_MODEL, {}
+    challenger = min(others, key=lambda n: sum(val_errors[n]))
+    diffs = [a - b for a, b in zip(val_errors[challenger], val_errors[DEFAULT_MODEL])]
+    n = len(diffs)
+    mean = sum(diffs) / n
+    se = (sum((x - mean) ** 2 for x in diffs) / (n - 1)) ** 0.5 / n**0.5 if n > 1 else 0.0
+    switch = mean < -z * se
+    evidence = {
+        "challenger": challenger,
+        "daily_mae_gain": round(-mean, 3),
+        "standard_error": round(se, 3),
+        "z": round(-mean / se, 2) if se else None,
+        "threshold_z": z,
+    }
+    return (challenger if switch else DEFAULT_MODEL), evidence
+
+
+def select_and_backtest(times, days, city_times, test_days=TEST_DAYS):
+    """Choose a model on rolling validation windows, then score all models on unseen test days.
+
+    Timeline: [ training | val 1 | val 2 | val 3 | val 4 ] [ test (report only) ]
+    Each validation window is scored by models fit on all days before it.
     """
     ordered = sorted(days)
-    if len(ordered) < test_days + val_days + 28:
+    if len(ordered) < test_days + VALIDATION_DAYS + 28:
         return None
     train, test = ordered[:-test_days], ordered[-test_days:]
-    inner, val = train[:-val_days], train[-val_days:]
-    names = eligible_models(times, inner)
-    validation = {n: _score(MODELS[n]().fit(times, inner, city_times), times, val) for n in names}
-    selected = min(names, key=lambda n: (validation[n]["daily_mae"], names.index(n)))
+    folds = [
+        (train[: len(train) - j * VALIDATION_FOLD_DAYS],
+         train[len(train) - j * VALIDATION_FOLD_DAYS : len(train) - (j - 1) * VALIDATION_FOLD_DAYS])
+        for j in range(VALIDATION_FOLDS, 0, -1)
+    ]  # fmt: skip
+    names = eligible_models(times, folds[0][0])  # eligible on the shortest training set
+    actual = Counter(t.date() for t in times)
+    val_errors = {n: [] for n in names}
+    for fold_train, fold_val in folds:
+        for n in names:
+            val_errors[n] += _daily_errors(
+                MODELS[n]().fit(times, fold_train, city_times), actual, fold_val
+            )
+    selected, evidence = choose_model(val_errors)
     phi = dispersion(city_times, train)  # ranges for the test window use training data only
     results = {}
     for n in names:
         model = MODELS[n]().fit(times, train, city_times)
         results[n] = {
             "label": MODELS[n].label,
-            "validation_daily_mae": validation[n]["daily_mae"],
+            "validation_daily_mae": round(sum(val_errors[n]) / len(val_errors[n]), 3),
             **{f"test_{k}": v for k, v in _score(model, times, test, phi).items()},
         }
-    actual = Counter(t.date() for t in times)
+    val = [d for _, fold_val in folds for d in fold_val]
     flat, chosen = results["flat"], results[selected]
     return {
         "train_days": len(train),
         "validation_start": val[0].isoformat(),
         "validation_end": val[-1].isoformat(),
+        "validation_folds": VALIDATION_FOLDS,
         "test_days": len(test),
         "test_start": test[0].isoformat(),
         "test_end": test[-1].isoformat(),
         "selected_model": selected,
         "selected_label": MODELS[selected].label,
         "selection_rule": (
-            "Lowest daily error on the validation days; test days were not used to choose."
+            f"Bayes unless another model has lower daily error by more than {SWITCH_Z:g} "
+            f"standard errors across {VALIDATION_FOLDS} rolling {VALIDATION_FOLD_DAYS}-day "
+            "validation windows; test days were not used to choose."
         ),
+        "selection_evidence": evidence,
         "models": results,
         "not_eligible": [n for n in MODELS if n not in names],  # e.g. lightgbm on sparse slices
         "actual_test_incidents": sum(actual.get(d, 0) for d in test),
