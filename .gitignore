@@ -1,0 +1,14 @@
+.venv/
+node_modules/
+frontend/dist/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.env
+*.tsbuildinfo
+.local_logs/
+.playwright-cli/
+output/
+data/raw/
+data/runs/
+organizer_docs/discord/*.txt

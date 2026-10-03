@@ -1,0 +1,14 @@
+{
+  "url": "https://data.calgary.ca/resource/35ra-9556.json?%24limit=500&%24order=start_dt_utc+DESC%2Cid+ASC",
+  "dataset": "35ra-9556",
+  "retrieved_at_utc": "2026-10-03T06:45:16.106178+00:00",
+  "sha256": "8be6b4753067db5c70be196998064f3036c2cd50695b57fa5a9b7fdbb2f90308",
+  "rows": 500,
+  "license_url": "https://data.calgary.ca/stories/s/Open-Calgary-Terms-of-Use/u45n-7awa",
+  "attribution": "Contains information licensed under the Open Government Licence \u2013 City of Calgary",
+  "limitations": [
+    "Unofficial archive; gaps possible",
+    "Changed location may create multiple records for one event",
+    "Not traffic-flow counts; no reliable clearance/duration field"
+  ]
+}

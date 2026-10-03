@@ -1,0 +1,745 @@
+{
+  "scenario": {
+    "main_vph": 1050.0,
+    "cross_vph": 160.0,
+    "duration_s": 900,
+    "seed": 42,
+    "budget_cad": 100000.0,
+    "cross_guardrail_pct": 30.0,
+    "retiming_cost_cad": 15000.0,
+    "widening_cost_cad": 1200000.0,
+    "annual_operating_cost_cad": 2000.0,
+    "occupancy": 1.2,
+    "value_of_time_cad": 20.0,
+    "operating_days": 250,
+    "asset_life_years": 10,
+    "demand_kind": "synthetic",
+    "demand_source": "Synthetic directional arrivals; not CalTRACS",
+    "flow_profile": null
+  },
+  "simulator_version": "Eclipse SUMO sumo 1.27.1",
+  "reference_definition": "Synthetic equal-green signal plan; not Calgary's observed timings",
+  "network_kind": "Synthetic straight-through three-intersection corridor",
+  "evaluation": {
+    "optimization_seed": 42,
+    "holdout_seeds": [
+      143,
+      244,
+      345
+    ],
+    "stress_seed": 446,
+    "paired_departures": true,
+    "objective": "Minimize total SUMO timeLoss + departure delay within budget/guardrail"
+  },
+  "pareto_ids": [
+    "reference",
+    "revised"
+  ],
+  "recommended_id": "revised",
+  "stress_tests": [
+    {
+      "demand_factor": 0.8,
+      "reference": {
+        "seed": 446,
+        "demand_factor": 0.8,
+        "demand_sha256": "d492a81f5fcf51726df22286947348787966378d15edcaf9d9ff8c954e239697",
+        "network_sha256": "72a9205e4dcf3cb01043e522ac3a1eb2189d6db847fa6dd1984c92aaa0e0ac87",
+        "horizon_s": 3300,
+        "metrics": {
+          "planned": 581,
+          "completed": 581,
+          "unfinished": 0,
+          "uninserted": 0,
+          "unserved": 0,
+          "total_delay_s": 66899.97,
+          "mean_delay_s": 115.146247848537,
+          "main_mean_delay_s": 159.96459595959595,
+          "cross_mean_delay_s": 19.21075675675676,
+          "mean_trip_s": 211.15662650602408,
+          "departure_delay_s": 376.43,
+          "max_queue": 888.13
+        },
+        "teleports": 0
+      },
+      "selected": {
+        "seed": 446,
+        "demand_factor": 0.8,
+        "demand_sha256": "d492a81f5fcf51726df22286947348787966378d15edcaf9d9ff8c954e239697",
+        "network_sha256": "983d4ca6871dc850d7def093bf2002dd7c1cd2893046495baeb14e876ba89f4c",
+        "horizon_s": 3300,
+        "metrics": {
+          "planned": 581,
+          "completed": 581,
+          "unfinished": 0,
+          "uninserted": 0,
+          "unserved": 0,
+          "total_delay_s": 51646.42,
+          "mean_delay_s": 88.8922891566265,
+          "main_mean_delay_s": 119.82343434343434,
+          "cross_mean_delay_s": 22.68291891891892,
+          "mean_trip_s": 184.94836488812393,
+          "departure_delay_s": 368.43,
+          "max_queue": 813.14
+        },
+        "teleports": 0
+      },
+      "comparison": {
+        "feasible": true,
+        "rejection_reasons": [],
+        "delay_reduction_pct": 22.80053339336326,
+        "vehicle_hours_saved": 4.237097222222223,
+        "cross_delay_change_pct": 18.07405198101288
+      }
+    },
+    {
+      "demand_factor": 1.2,
+      "reference": {
+        "seed": 446,
+        "demand_factor": 1.2,
+        "demand_sha256": "0e108f9e2db8b4bc38fdc94ae45df4fcf4e8f1e8e092b4bf8782951f86c236d2",
+        "network_sha256": "72a9205e4dcf3cb01043e522ac3a1eb2189d6db847fa6dd1984c92aaa0e0ac87",
+        "horizon_s": 3300,
+        "metrics": {
+          "planned": 890,
+          "completed": 890,
+          "unfinished": 0,
+          "uninserted": 0,
+          "unserved": 0,
+          "total_delay_s": 227037.07,
+          "mean_delay_s": 255.09783146067417,
+          "main_mean_delay_s": 362.03597701149425,
+          "cross_mean_delay_s": 23.33508896797153,
+          "mean_trip_s": 266.6887640449438,
+          "departure_delay_s": 76010.7,
+          "max_queue": 1192.89
+        },
+        "teleports": 0
+      },
+      "selected": {
+        "seed": 446,
+        "demand_factor": 1.2,
+        "demand_sha256": "0e108f9e2db8b4bc38fdc94ae45df4fcf4e8f1e8e092b4bf8782951f86c236d2",
+        "network_sha256": "983d4ca6871dc850d7def093bf2002dd7c1cd2893046495baeb14e876ba89f4c",
+        "horizon_s": 3300,
+        "metrics": {
+          "planned": 890,
+          "completed": 890,
+          "unfinished": 0,
+          "uninserted": 0,
+          "unserved": 0,
+          "total_delay_s": 175340.21,
+          "mean_delay_s": 197.01147191011236,
+          "main_mean_delay_s": 275.54182266009855,
+          "cross_mean_delay_s": 26.815800711743773,
+          "mean_trip_s": 246.74044943820223,
+          "departure_delay_s": 42054.7,
+          "max_queue": 1326.88
+        },
+        "teleports": 0
+      },
+      "comparison": {
+        "feasible": true,
+        "rejection_reasons": [],
+        "delay_reduction_pct": 22.770228667943968,
+        "vehicle_hours_saved": 14.360238888888894,
+        "cross_delay_change_pct": 14.916213726674359
+      }
+    }
+  ],
+  "stress_passed": true,
+  "claim": "Modeled comparative evidence; no calibrated Calgary field-effect claim",
+  "limitations": [
+    "Synthetic corridor geometry and default demand; no observed signal timings",
+    "Imported measured arrivals alone do not calibrate travel times or routing",
+    "Only straight trips; pedestrian, turn, bus and induced-demand effects omitted",
+    "Costs, occupancy and annual operating assumptions are illustrative",
+    "Three hold-out seeds are preliminary evidence, not broad statistical validation",
+    "Stress failures block a robust pilot claim; inspect individual trials",
+    "No construction feasibility, safety assessment or real signal control"
+  ],
+  "source_context": {
+    "url": "https://data.calgary.ca/resource/35ra-9556.json?%24limit=500&%24order=start_dt_utc+DESC%2Cid+ASC",
+    "dataset": "35ra-9556",
+    "retrieved_at_utc": "2026-10-03T06:45:16.106178+00:00",
+    "sha256": "8be6b4753067db5c70be196998064f3036c2cd50695b57fa5a9b7fdbb2f90308",
+    "rows": 500,
+    "license_url": "https://data.calgary.ca/stories/s/Open-Calgary-Terms-of-Use/u45n-7awa",
+    "attribution": "Contains information licensed under the Open Government Licence \u2013 City of Calgary",
+    "limitations": [
+      "Unofficial archive; gaps possible",
+      "Changed location may create multiple records for one event",
+      "Not traffic-flow counts; no reliable clearance/duration field"
+    ]
+  },
+  "job_id": "6990ed27b18e43c49a2bc640ba4027f3",
+  "trace": [
+    {
+      "at_utc": "2026-10-03T07:42:08.291131+00:00",
+      "agent": "Data auditor",
+      "action": "inspect",
+      "detail": "Demand and network provenance checked; costs are estimates.",
+      "demand_kind": "synthetic",
+      "demand_source": "Synthetic directional arrivals; not CalTRACS",
+      "network_kind": "synthetic three-intersection corridor",
+      "main_vph": 1050.0,
+      "cross_vph": 160.0
+    },
+    {
+      "at_utc": "2026-10-03T07:42:09.334376+00:00",
+      "agent": "Simulation agent",
+      "action": "run_reference",
+      "detail": "Run unchanged equal-green baseline."
+    },
+    {
+      "at_utc": "2026-10-03T07:42:15.371494+00:00",
+      "agent": "Simulation agent",
+      "action": "reference_scored",
+      "detail": "Actual SUMO reference completed.",
+      "metrics": {
+        "planned": 758,
+        "completed": 758,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "total_delay_s": 151349.14,
+        "mean_delay_s": 199.66905013192613,
+        "main_mean_delay_s": 281.4203275529865,
+        "cross_mean_delay_s": 22.142217573221757,
+        "mean_trip_s": 267.48284960422166,
+        "departure_delay_s": 22070.95,
+        "max_queue": 1349.78
+      },
+      "demand_sha256": "82449a7cfb9e17125e4cdebe6147b096502cbc8602f22eb8f8f3c45c9e846de1"
+    },
+    {
+      "at_utc": "2026-10-03T07:42:15.374045+00:00",
+      "agent": "Planning agent",
+      "action": "propose",
+      "detail": "Allocate green to observed arrival imbalance; keep clearance/service bounds.",
+      "proposal": {
+        "id": "candidate",
+        "label": "Demand-based retiming",
+        "main_green_share": 0.8,
+        "main_lanes": 1,
+        "capital_cost_cad": 15000.0
+      }
+    },
+    {
+      "at_utc": "2026-10-03T07:42:20.292729+00:00",
+      "agent": "Evaluation agent",
+      "action": "candidate_scored",
+      "detail": "Read actual delay and budget/cross-street constraints.",
+      "metrics": {
+        "planned": 758,
+        "completed": 758,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "total_delay_s": 41870.17,
+        "mean_delay_s": 55.23769129287599,
+        "main_mean_delay_s": 60.618766859344895,
+        "cross_mean_delay_s": 43.55242677824268,
+        "mean_trip_s": 151.07387862796833,
+        "departure_delay_s": 850.95,
+        "max_queue": 642.12
+      },
+      "comparison": {
+        "feasible": false,
+        "rejection_reasons": [
+          "Exceeds cross-street delay guardrail"
+        ],
+        "delay_reduction_pct": 72.33537633580211,
+        "vehicle_hours_saved": 30.410825000000003,
+        "cross_delay_change_pct": 96.69406026844348
+      }
+    },
+    {
+      "at_utc": "2026-10-03T07:42:20.293449+00:00",
+      "agent": "Revision agent",
+      "action": "revise",
+      "detail": "Cross-street guardrail exceeded; scale green change by allowed/observed delay increase with 20% margin.",
+      "proposal": {
+        "id": "revised",
+        "label": "Outcome-based revision",
+        "main_green_share": 0.574,
+        "main_lanes": 1,
+        "capital_cost_cad": 15000.0
+      }
+    },
+    {
+      "at_utc": "2026-10-03T07:42:27.054079+00:00",
+      "agent": "Planning agent",
+      "action": "capacity_alternative",
+      "detail": "Compare lane capacity as separately costed, unverified construction option.",
+      "proposal": {
+        "id": "capacity",
+        "label": "Add arterial lane (capacity experiment)",
+        "main_green_share": 0.5,
+        "main_lanes": 2,
+        "capital_cost_cad": 1200000.0
+      }
+    },
+    {
+      "at_utc": "2026-10-03T07:42:31.534889+00:00",
+      "agent": "Evaluation agent",
+      "action": "holdout",
+      "detail": "Evaluate frozen Equal-green reference on three unseen seeds."
+    },
+    {
+      "at_utc": "2026-10-03T07:42:44.086015+00:00",
+      "agent": "Evaluation agent",
+      "action": "holdout",
+      "detail": "Evaluate frozen Demand-based retiming on three unseen seeds."
+    },
+    {
+      "at_utc": "2026-10-03T07:42:51.887572+00:00",
+      "agent": "Evaluation agent",
+      "action": "holdout",
+      "detail": "Evaluate frozen Outcome-based revision on three unseen seeds."
+    },
+    {
+      "at_utc": "2026-10-03T07:43:04.321836+00:00",
+      "agent": "Evaluation agent",
+      "action": "holdout",
+      "detail": "Evaluate frozen Add arterial lane (capacity experiment) on three unseen seeds."
+    },
+    {
+      "at_utc": "2026-10-03T07:43:13.707287+00:00",
+      "agent": "Evaluation agent",
+      "action": "stress_test",
+      "detail": "Check selected plan at 80% arrival demand."
+    },
+    {
+      "at_utc": "2026-10-03T07:43:18.873107+00:00",
+      "agent": "Evaluation agent",
+      "action": "stress_test",
+      "detail": "Check selected plan at 120% arrival demand."
+    },
+    {
+      "at_utc": "2026-10-03T07:43:24.319445+00:00",
+      "agent": "Reporting agent",
+      "action": "recommend",
+      "detail": "Select Outcome-based revision by constrained hold-out total delay.",
+      "selected_id": "revised",
+      "frontier": [
+        "reference",
+        "revised"
+      ],
+      "stress_passed": true
+    }
+  ],
+  "alternatives": [
+    {
+      "id": "reference",
+      "label": "Equal-green reference",
+      "main_green_share": 0.5,
+      "main_lanes": 1,
+      "capital_cost_cad": 0,
+      "metrics": {
+        "total_delay_s": 152683.97,
+        "mean_delay_s": 196.89730173927683,
+        "main_mean_delay_s": 277.7655492716856,
+        "cross_mean_delay_s": 23.661228056151646,
+        "mean_trip_s": 257.6048527055005,
+        "max_queue": 1162.3866666666668,
+        "completed": 774.3333333333334,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "planned": 774.3333333333334,
+        "departure_delay_s": 28518.67
+      },
+      "comparison": {
+        "feasible": true,
+        "rejection_reasons": [],
+        "delay_reduction_pct": 0.0,
+        "vehicle_hours_saved": 0.0,
+        "cross_delay_change_pct": 0.0
+      },
+      "economics": {
+        "estimated_annual_time_value_cad": 0.0,
+        "estimated_annualized_cost_cad": 0.0,
+        "estimated_net_annual_value_cad": 0.0,
+        "label": "Illustrative undiscounted annualization of this modeled period; not field savings"
+      },
+      "holdout_trials": [
+        {
+          "seed": 143,
+          "demand_factor": 1,
+          "demand_sha256": "7bfd66eca7ceb66c5e7893295f789bba68ccd94630138f0afd6d50706b3af07b",
+          "network_sha256": "72a9205e4dcf3cb01043e522ac3a1eb2189d6db847fa6dd1984c92aaa0e0ac87",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 747,
+            "completed": 747,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 138949.48,
+            "mean_delay_s": 186.01001338688087,
+            "main_mean_delay_s": 259.8809727626459,
+            "cross_mean_delay_s": 23.050042918454935,
+            "mean_trip_s": 256.43775100401604,
+            "departure_delay_s": 19982.46,
+            "max_queue": 1156.92
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 244,
+          "demand_factor": 1,
+          "demand_sha256": "c463da3ea1e779bbaa741a0488e1a0509fc2053486ea113165562d4441fe4265",
+          "network_sha256": "72a9205e4dcf3cb01043e522ac3a1eb2189d6db847fa6dd1984c92aaa0e0ac87",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 796,
+            "completed": 796,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 171665.08,
+            "mean_delay_s": 215.659648241206,
+            "main_mean_delay_s": 306.7062222222222,
+            "cross_mean_delay_s": 23.60828125,
+            "mean_trip_s": 264.13065326633165,
+            "departure_delay_s": 39002.07,
+            "max_queue": 1188.39
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 345,
+          "demand_factor": 1,
+          "demand_sha256": "b18b92db970e906ecf2e48cc73fd7e32a2abbc04c2d33e07b3ff43892d43919b",
+          "network_sha256": "72a9205e4dcf3cb01043e522ac3a1eb2189d6db847fa6dd1984c92aaa0e0ac87",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 780,
+            "completed": 780,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 147437.35,
+            "mean_delay_s": 189.0222435897436,
+            "main_mean_delay_s": 266.7094528301887,
+            "cross_mean_delay_s": 24.32536,
+            "mean_trip_s": 252.24615384615385,
+            "departure_delay_s": 26571.48,
+            "max_queue": 1141.85
+          },
+          "teleports": 0
+        }
+      ]
+    },
+    {
+      "id": "candidate",
+      "label": "Demand-based retiming",
+      "main_green_share": 0.8,
+      "main_lanes": 1,
+      "capital_cost_cad": 15000.0,
+      "metrics": {
+        "total_delay_s": 41821.32,
+        "mean_delay_s": 53.96567262495846,
+        "main_mean_delay_s": 58.289174461003846,
+        "cross_mean_delay_s": 44.70962314288269,
+        "mean_trip_s": 150.36503671344744,
+        "max_queue": 660.15,
+        "completed": 774.3333333333334,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "planned": 774.3333333333334,
+        "departure_delay_s": 714.0033333333333
+      },
+      "comparison": {
+        "feasible": false,
+        "rejection_reasons": [
+          "Exceeds cross-street delay guardrail"
+        ],
+        "delay_reduction_pct": 72.60922675772709,
+        "vehicle_hours_saved": 30.795180555555554,
+        "cross_delay_change_pct": 88.95732308052668
+      },
+      "economics": {
+        "estimated_annual_time_value_cad": 184771.08,
+        "estimated_annualized_cost_cad": 3500.0,
+        "estimated_net_annual_value_cad": 181271.08,
+        "label": "Illustrative undiscounted annualization of this modeled period; not field savings"
+      },
+      "holdout_trials": [
+        {
+          "seed": 143,
+          "demand_factor": 1,
+          "demand_sha256": "7bfd66eca7ceb66c5e7893295f789bba68ccd94630138f0afd6d50706b3af07b",
+          "network_sha256": "d85ff178f651d28e721eb2f82025fc90b5e755137d4caf40d7bcdfe240c9beac",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 747,
+            "completed": 747,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 38878.12,
+            "mean_delay_s": 52.04567603748327,
+            "main_mean_delay_s": 55.89171206225681,
+            "cross_mean_delay_s": 43.56128755364807,
+            "mean_trip_s": 148.45515394912985,
+            "departure_delay_s": 583.46,
+            "max_queue": 574.69
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 244,
+          "demand_factor": 1,
+          "demand_sha256": "c463da3ea1e779bbaa741a0488e1a0509fc2053486ea113165562d4441fe4265",
+          "network_sha256": "d85ff178f651d28e721eb2f82025fc90b5e755137d4caf40d7bcdfe240c9beac",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 796,
+            "completed": 796,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 44864.22,
+            "mean_delay_s": 56.36208542713568,
+            "main_mean_delay_s": 62.02,
+            "cross_mean_delay_s": 44.427421875,
+            "mean_trip_s": 152.92713567839195,
+            "departure_delay_s": 721.07,
+            "max_queue": 708.14
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 345,
+          "demand_factor": 1,
+          "demand_sha256": "b18b92db970e906ecf2e48cc73fd7e32a2abbc04c2d33e07b3ff43892d43919b",
+          "network_sha256": "d85ff178f651d28e721eb2f82025fc90b5e755137d4caf40d7bcdfe240c9beac",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 780,
+            "completed": 780,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 41721.62,
+            "mean_delay_s": 53.48925641025642,
+            "main_mean_delay_s": 56.95581132075472,
+            "cross_mean_delay_s": 46.14016,
+            "mean_trip_s": 149.7128205128205,
+            "departure_delay_s": 837.48,
+            "max_queue": 697.62
+          },
+          "teleports": 0
+        }
+      ]
+    },
+    {
+      "id": "revised",
+      "label": "Outcome-based revision",
+      "main_green_share": 0.574,
+      "main_lanes": 1,
+      "capital_cost_cad": 15000.0,
+      "metrics": {
+        "total_delay_s": 111199.17666666667,
+        "mean_delay_s": 143.30634051560793,
+        "main_mean_delay_s": 197.5526303456627,
+        "cross_mean_delay_s": 27.16296147353362,
+        "mean_trip_s": 227.97598715956468,
+        "max_queue": 1140.9166666666667,
+        "completed": 774.3333333333334,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "planned": 774.3333333333334,
+        "departure_delay_s": 9916.67
+      },
+      "comparison": {
+        "feasible": true,
+        "rejection_reasons": [],
+        "delay_reduction_pct": 27.170365908964335,
+        "vehicle_hours_saved": 11.523553703703705,
+        "cross_delay_change_pct": 14.79945761509857
+      },
+      "economics": {
+        "estimated_annual_time_value_cad": 69141.32,
+        "estimated_annualized_cost_cad": 3500.0,
+        "estimated_net_annual_value_cad": 65641.32,
+        "label": "Illustrative undiscounted annualization of this modeled period; not field savings"
+      },
+      "holdout_trials": [
+        {
+          "seed": 143,
+          "demand_factor": 1,
+          "demand_sha256": "7bfd66eca7ceb66c5e7893295f789bba68ccd94630138f0afd6d50706b3af07b",
+          "network_sha256": "983d4ca6871dc850d7def093bf2002dd7c1cd2893046495baeb14e876ba89f4c",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 747,
+            "completed": 747,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 98345.21,
+            "mean_delay_s": 131.6535609103079,
+            "main_mean_delay_s": 179.39474708171204,
+            "cross_mean_delay_s": 26.336094420600862,
+            "mean_trip_s": 223.1847389558233,
+            "departure_delay_s": 4234.46,
+            "max_queue": 1118.4
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 244,
+          "demand_factor": 1,
+          "demand_sha256": "c463da3ea1e779bbaa741a0488e1a0509fc2053486ea113165562d4441fe4265",
+          "network_sha256": "983d4ca6871dc850d7def093bf2002dd7c1cd2893046495baeb14e876ba89f4c",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 796,
+            "completed": 796,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 129611.72,
+            "mean_delay_s": 162.82879396984924,
+            "main_mean_delay_s": 227.0563703703704,
+            "cross_mean_delay_s": 27.34875,
+            "mean_trip_s": 238.33040201005025,
+            "departure_delay_s": 17473.07,
+            "max_queue": 1177.47
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 345,
+          "demand_factor": 1,
+          "demand_sha256": "b18b92db970e906ecf2e48cc73fd7e32a2abbc04c2d33e07b3ff43892d43919b",
+          "network_sha256": "983d4ca6871dc850d7def093bf2002dd7c1cd2893046495baeb14e876ba89f4c",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 780,
+            "completed": 780,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 105640.6,
+            "mean_delay_s": 135.43666666666667,
+            "main_mean_delay_s": 186.20677358490565,
+            "cross_mean_delay_s": 27.80404,
+            "mean_trip_s": 222.4128205128205,
+            "departure_delay_s": 8042.48,
+            "max_queue": 1126.88
+          },
+          "teleports": 0
+        }
+      ]
+    },
+    {
+      "id": "capacity",
+      "label": "Add arterial lane (capacity experiment)",
+      "main_green_share": 0.5,
+      "main_lanes": 2,
+      "capital_cost_cad": 1200000.0,
+      "metrics": {
+        "total_delay_s": 62509.32,
+        "mean_delay_s": 80.70620137535927,
+        "main_mean_delay_s": 107.44731465755945,
+        "cross_mean_delay_s": 23.368062852288983,
+        "mean_trip_s": 177.52221418422909,
+        "max_queue": 888.8333333333334,
+        "completed": 774.3333333333334,
+        "unfinished": 0,
+        "uninserted": 0,
+        "unserved": 0,
+        "planned": 774.3333333333334,
+        "departure_delay_s": 395.00333333333333
+      },
+      "comparison": {
+        "feasible": false,
+        "rejection_reasons": [
+          "Exceeds capital budget"
+        ],
+        "delay_reduction_pct": 59.059670769629584,
+        "vehicle_hours_saved": 25.048513888888888,
+        "cross_delay_change_pct": -1.2390109387684305
+      },
+      "economics": {
+        "estimated_annual_time_value_cad": 150291.08,
+        "estimated_annualized_cost_cad": 122000.0,
+        "estimated_net_annual_value_cad": 28291.08,
+        "label": "Illustrative undiscounted annualization of this modeled period; not field savings"
+      },
+      "holdout_trials": [
+        {
+          "seed": 143,
+          "demand_factor": 1,
+          "demand_sha256": "7bfd66eca7ceb66c5e7893295f789bba68ccd94630138f0afd6d50706b3af07b",
+          "network_sha256": "ccd3f2fce4b8b532130047679f4d35ad0d53c61174ad19afe57a11c25af70ee5",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 747,
+            "completed": 747,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 59657.18,
+            "mean_delay_s": 79.86235609103079,
+            "main_mean_delay_s": 105.86270428015564,
+            "cross_mean_delay_s": 22.505364806866954,
+            "mean_trip_s": 176.5368139223561,
+            "departure_delay_s": 381.46,
+            "max_queue": 858.16
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 244,
+          "demand_factor": 1,
+          "demand_sha256": "c463da3ea1e779bbaa741a0488e1a0509fc2053486ea113165562d4441fe4265",
+          "network_sha256": "ccd3f2fce4b8b532130047679f4d35ad0d53c61174ad19afe57a11c25af70ee5",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 796,
+            "completed": 796,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 65217.6,
+            "mean_delay_s": 81.93165829145728,
+            "main_mean_delay_s": 109.7262962962963,
+            "cross_mean_delay_s": 23.30234375,
+            "mean_trip_s": 178.92085427135677,
+            "departure_delay_s": 398.07,
+            "max_queue": 897.12
+          },
+          "teleports": 0
+        },
+        {
+          "seed": 345,
+          "demand_factor": 1,
+          "demand_sha256": "b18b92db970e906ecf2e48cc73fd7e32a2abbc04c2d33e07b3ff43892d43919b",
+          "network_sha256": "ccd3f2fce4b8b532130047679f4d35ad0d53c61174ad19afe57a11c25af70ee5",
+          "horizon_s": 3300,
+          "metrics": {
+            "planned": 780,
+            "completed": 780,
+            "unfinished": 0,
+            "uninserted": 0,
+            "unserved": 0,
+            "total_delay_s": 62653.18,
+            "mean_delay_s": 80.32458974358974,
+            "main_mean_delay_s": 106.75294339622641,
+            "cross_mean_delay_s": 24.29648,
+            "mean_trip_s": 177.10897435897436,
+            "departure_delay_s": 405.48,
+            "max_queue": 911.22
+          },
+          "teleports": 0
+        }
+      ]
+    }
+  ]
+}
