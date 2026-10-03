@@ -37,7 +37,7 @@ trials; the default took approximately 12 seconds on the development Mac.
 No Make available: run the commands listed in [Makefile](Makefile) individually.
 No API key or .env file required. Servers bind loopback. Jobs are in memory,
 limited to one active run and eight retained jobs; restarting the API loses history.
-This local server has no authentication or production deployment configuration.
+This local server has no authentication; the deployed container adds a shared password.
 
 ```sh
 make test
@@ -57,8 +57,22 @@ make mcp            # MCP server over stdio; make mcp-http serves 127.0.0.1:8000
 
 A fresh checkout seeds its database from the committed `data/analysis` exports.
 
-Build output is frontend-only; `make web` uses Vite's `/api` proxy. A deployed
-frontend requires a separate API proxy/server configuration.
+Build output is frontend-only; `make web` uses Vite's `/api` proxy. For deployment,
+`app.deploy:app` serves the API and built frontend together (see below).
+
+## Deploy (Google Cloud Run)
+
+One container ([Dockerfile](Dockerfile)) serves the API and built frontend behind a
+shared password (user `bottleneck`, password in Secret Manager). It runs as a single
+instance because jobs are in memory, and scales to zero when idle.
+
+1. Once: `PROJECT_ID=<project> REGION=us-central1 bash deploy/setup-gcp.sh`, then add the
+   four repository variables it prints.
+2. Push any branch. [The workflow](.github/workflows/deploy.yml) smoke-tests the image and
+   deploys it as a revision tagged with the branch name, at
+   `https://<branch-tag>---<service-url-host>`. Pushes to `main` also take the main URL.
+3. Point the main URL at another branch instantly (no rebuild):
+   `gcloud run services update-traffic bottleneck-busters --region <region> --to-tags <branch-tag>=100`
 
 ## What works
 
