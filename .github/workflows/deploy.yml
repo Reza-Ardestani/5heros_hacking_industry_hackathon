@@ -1,0 +1,90 @@
+# Every pushed branch becomes a tagged Cloud Run revision with its own URL:
+#   https://<branch-tag>---<service>-<hash>.<region>.run.app
+# Pushes to main also move the service's main URL to the new revision.
+# Point the main URL at another branch (instant; no rebuild):
+#   gcloud run services update-traffic bottleneck-busters --region $REGION --to-tags <branch-tag>=100
+# One-time Google Cloud setup: deploy/setup-gcp.sh
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  SERVICE: bottleneck-busters
+
+jobs:
+  deploy:
+    # Skips quietly in forks or before the repository variables are configured.
+    if: vars.GCP_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive revision tag from branch name
+        id: tag
+        run: |
+          tag=$(printf '%s' "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9]+/-/g; s/^-+//' | cut -c1-40 | sed -E 's/-+$//')
+          [[ "$tag" =~ ^[a-z] ]] || tag="b-$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=$REGION-docker.pkg.dev/$PROJECT_ID/bottleneck-busters/app:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -t "${{ steps.tag.outputs.image }}" .
+          # Smoke test before pushing: SUMO runs in the image and the password gate holds.
+          docker run --rm --entrypoint python "${{ steps.tag.outputs.image }}" -c \
+            "import subprocess, sumo, pathlib; subprocess.run([str(pathlib.Path(sumo.__file__).parent / 'bin' / 'sumo'), '--version'], check=True)"
+          docker run -d --name smoke -p 8080:8080 -e BB_AUTH_PASSWORD=smoke "${{ steps.tag.outputs.image }}"
+          for i in $(seq 1 30); do curl -sf localhost:8080/api/health >/dev/null && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -u bottleneck:smoke localhost:8080/)" = 200
+          docker rm -f smoke
+          docker push "${{ steps.tag.outputs.image }}"
+
+      - name: Deploy revision
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE: ${{ steps.tag.outputs.image }}
+        run: |
+          # Jobs live in process memory, so the app must run as exactly one instance, and
+          # simulations run after the request returns, so CPU must stay allocated.
+          args=(
+            --image "$IMAGE" --region "$REGION" --tag "$TAG"
+            --service-account "bb-runtime@$PROJECT_ID.iam.gserviceaccount.com"
+            --set-secrets BB_AUTH_PASSWORD=bb-auth-password:latest
+            --min-instances 0 --max-instances 1 --no-cpu-throttling --cpu-boost
+            --cpu 1 --memory 2Gi --concurrency 40 --timeout 300
+            --allow-unauthenticated --quiet
+          )
+          if [[ "$GITHUB_REF_NAME" != "main" ]] && gcloud run services describe "$SERVICE" --region "$REGION" >/dev/null 2>&1; then
+            args+=(--no-traffic)
+          fi
+          gcloud run deploy "$SERVICE" "${args[@]}"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-tags main=100 --quiet
+          fi
+          url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format 'value(status.url)')
+          tag_url=$(printf '%s' "$url" | sed -E "s#https://#https://$TAG---#")
+          echo "### Deployed \`$GITHUB_REF_NAME\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch URL: $tag_url" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main URL: $url" >> "$GITHUB_STEP_SUMMARY"
