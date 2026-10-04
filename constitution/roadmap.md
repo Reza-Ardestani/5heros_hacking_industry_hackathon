@@ -46,6 +46,11 @@ entry points verified by tests/build and import guards.
 
 ## Later storage and modeling work
 
+October 4 user-authorized README/demo onboarding: present the problem, journeys,
+architecture images, datasets and bounded results using the submission structure;
+finish with verified Makefile commands for separate or combined API/UI startup.
+[Spec](../specs/features/readme-demo-onboarding/requirements.md).
+
 Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal
 mappings; redirect-to-parallel-route option; evaluate Chronos-2 as a fourth forecaster in
 the same validation/test harness; overdispersed forecast ranges; managed database and

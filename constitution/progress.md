@@ -1,5 +1,9 @@
 # Progress
 
+October 4: README refreshed from submission structure with both architecture
+images and final Makefile run guide. Combined API/UI/MCP smoke check, local
+links and shutdown verified. [Evidence](../specs/features/readme-demo-onboarding/progress.md).
+
 October 4: frontend vertical slices adopted after constitution/four-file spec.
 App reduced to navigation/composition; 14 UI tests, TypeScript/Vite build and both
 architecture guards passed.
