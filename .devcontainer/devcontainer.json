@@ -20,6 +20,9 @@
   "secrets": {
     "BB_AUTH_PASSWORD": {
       "description": "Demo site password (username: bottleneck). Leave empty to have one generated."
+    },
+    "ELEVENLABS_API_KEY": {
+      "description": "Optional. ElevenLabs API key: adds a read-aloud button to chat replies."
     }
   }
 }

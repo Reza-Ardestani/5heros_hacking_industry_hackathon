@@ -6,7 +6,7 @@ from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from app.application import disruptions, intersection_study
@@ -16,6 +16,7 @@ from app.application.planner import PlanningService
 from app.application.simulation_log import SimulationRecorder
 from app.application.study_service import StudyService
 from app.domain.models import Scenario
+from app.infra import elevenlabs
 from app.infra.incidents import load_incidents
 from app.infra.simulation import SumoSimulator
 
@@ -311,6 +312,28 @@ async def chat(body: ChatRequest):
 def chat_info():
     """Chat mode (builtin or Claude), available tools and suggested questions."""
     return {"mode": chat_mode(), "suggestions": SUGGESTIONS}
+
+
+class SpeechRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+@app.get("/api/speech/info")
+def speech_info():
+    """Whether ElevenLabs text-to-speech is configured (ELEVENLABS_API_KEY) and its voice."""
+    return elevenlabs.info()
+
+
+@app.post("/api/speech", response_class=Response)
+def speech(body: SpeechRequest):
+    """Speak a chat reply with ElevenLabs; returns MP3 audio. 503 when no key is set."""
+    try:
+        audio = elevenlabs.synthesize(body.text)
+    except elevenlabs.SpeechUnavailable as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except elevenlabs.SpeechFailed as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/jobs", status_code=202)

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, MessageSquare, Send, X } from "lucide-react";
+import { ChevronDown, Loader2, MessageSquare, Send, Square, Volume2, X } from "lucide-react";
 import { request } from "../lib/api";
 import type { ChatAction, ChatReply } from "../types";
 
@@ -38,9 +38,15 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
     [input, setInput] = useState(""),
     [busy, setBusy] = useState(false),
     [mode, setMode] = useState<"builtin" | "claude">("builtin"),
-    [suggestions, setSuggestions] = useState<string[]>([]);
+    [suggestions, setSuggestions] = useState<string[]>([]),
+    [canSpeak, setCanSpeak] = useState(false),
+    [speaking, setSpeaking] = useState<{
+      index: number;
+      loading: boolean;
+    } | null>(null);
   const listRef = useRef<HTMLDivElement>(null),
-    inputRef = useRef<HTMLInputElement>(null);
+    inputRef = useRef<HTMLInputElement>(null),
+    audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     request<{ mode: "builtin" | "claude"; suggestions: string[] }>("/api/chat/info")
@@ -49,7 +55,45 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
         setSuggestions(i.suggestions);
       })
       .catch(() => undefined); // the dock still works; errors show on send
+    // ElevenLabs voice is optional: the speaker button only appears when the server has a key.
+    request<{ available: boolean }>("/api/speech/info")
+      .then((i) => setCanSpeak(i.available))
+      .catch(() => setCanSpeak(false));
   }, []);
+
+  const stopSpeaking = () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setSpeaking(null);
+  };
+  const speak = async (index: number, text: string) => {
+    if (speaking?.index === index) return stopSpeaking();
+    stopSpeaking();
+    setSpeaking({ index, loading: true });
+    try {
+      const r = await fetch("/api/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!r.ok)
+        throw new Error(
+          (await r.json().catch(() => null))?.detail ?? `Speech failed (${r.status})`,
+        );
+      const url = URL.createObjectURL(await r.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking((s) => (s?.index === index ? null : s));
+      };
+      setSpeaking({ index, loading: false });
+      await audio.play();
+    } catch (e) {
+      setSpeaking(null);
+      setMessages((m) => [...m, { role: "assistant", content: (e as Error).message, error: true }]);
+    }
+  };
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, busy, open]);
@@ -85,13 +129,16 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
       }
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: r.reply, tools: r.tools_used, opened, notice: r.notice },
+        {
+          role: "assistant",
+          content: r.reply,
+          tools: r.tools_used,
+          opened,
+          notice: r.notice,
+        },
       ]);
     } catch (e) {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: (e as Error).message, error: true },
-      ]);
+      setMessages((m) => [...m, { role: "assistant", content: (e as Error).message, error: true }]);
     } finally {
       setBusy(false);
     }
@@ -136,6 +183,26 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
         {messages.map((m, i) => (
           <div className={`chat-msg ${m.role}${m.error ? " error" : ""}`} key={i}>
             <p>{m.content}</p>
+            {canSpeak && m.role === "assistant" && !m.error && (
+              <button
+                className="chat-speak"
+                onClick={() => speak(i, m.content)}
+                aria-label={
+                  speaking?.index === i ? "Stop reading aloud" : "Read aloud (ElevenLabs)"
+                }
+                title={speaking?.index === i ? "Stop" : "Read aloud (ElevenLabs)"}
+              >
+                {speaking?.index === i ? (
+                  speaking.loading ? (
+                    <Loader2 size={13} className="spin" />
+                  ) : (
+                    <Square size={12} />
+                  )
+                ) : (
+                  <Volume2 size={13} />
+                )}
+              </button>
+            )}
             {(m.tools?.length || m.opened || m.notice) && (
               <div className="chat-meta">
                 {m.tools?.map((t, j) => (

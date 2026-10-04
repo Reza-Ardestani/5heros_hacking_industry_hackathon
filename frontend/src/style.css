@@ -3656,3 +3656,20 @@ main {
     bottom: 16px;
   }
 }
+
+/* ElevenLabs read-aloud button on assistant replies (ChatDock) */
+.chat-speak {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  margin-top: 4px;
+  border: 1px solid #dbe4e8;
+  border-radius: 5px;
+  background: #fff;
+  color: #16796c;
+}
+.chat-speak:hover {
+  background: #e8f3eb;
+}
