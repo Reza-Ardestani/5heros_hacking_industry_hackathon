@@ -155,3 +155,19 @@ async def test_claude_failure_falls_back_to_builtin(monkeypatch):
     r = await Assistant().reply("go to compare")
     assert r["mode"] == "builtin" and "Claude unavailable" in r["notice"]
     assert r["actions"][0]["view"] == "compare"
+
+
+@pytest.mark.anyio
+async def test_budget_question_skips_provincial_roads_and_opens_a_study(builtin):
+    r = await builtin.reply(
+        "I have $5 million to spend on improving a road. Which road should I put it towards?"
+    )
+    assert r["tools_used"] == ["rank_priorities"]
+    ranked = disruptions.priorities(limit=30)["items"]
+    best = next(
+        i for i in ranked if i["key"] not in {"Deerfoot Trail", "Stoney Trail"} and i["study_spot"]
+    )
+    assert r["actions"] == [{"type": "study", "intersection": best["study_spot"]}]
+    assert r["reply"].startswith(f"{ranked[0]['key']} has the most reported disruption")
+    assert f"Start with a study at {best['study_spot']}." in r["reply"]
+    assert "$5,000,000" in r["reply"]

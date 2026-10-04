@@ -41,7 +41,11 @@ SUGGESTIONS = [
     "What is happening live right now?",
     "Simulate Glenmore Trail & Macleod Trail",
     "Go to evidence",
+    "I have $5 million to improve a road. Which road?",
 ]
+# Freeways the Province (Alberta Transportation) manages, not the City: a City capital
+# budget cannot be spent on them, so investment answers skip them.
+PROVINCIAL_ROADS = {"Deerfoot Trail", "Stoney Trail"}
 
 # Road-type words reduced to one spelling so "16th Avenue" matches "16 Ave".
 ROAD_TYPES = {
@@ -244,6 +248,12 @@ class Assistant:
             label = "the mcp-info-ml tab" if tab else PAGE_LABELS[view]
             return self._answer(f"Opening {label}.", [action], trail)
 
+        # "I have $5 million to improve a road. Which road?" Words are normalised, so
+        # "road" reads "rd" and "$5 million" reads "5 million".
+        if has("spend", "invest", "investment", "budget", "million", "allocate", "funding",
+               "put it towards", "put it toward", "which rd", "what rd", "best rd", "improve a rd"):  # fmt: skip
+            return await self._invest(t, trail)
+
         if has("live", "right now", "currently", "happening now", "current incidents"):
             return await self._live(trail)
 
@@ -317,6 +327,58 @@ class Assistant:
             "next 14 days with lightgbm'), 'live now', 'data status', or 'simulate <"
             "intersection>'.",
             suggestions=SUGGESTIONS,
+        )
+
+    async def _invest(self, t, trail):
+        """Where to put a capital budget: the busiest road the City controls whose busiest
+        hotspot the arterial simulator can represent, ranked by forecast disruption."""
+        r = await self.call("rank_priorities", {"horizon_days": 28, "limit": 30}, trail)
+        items = r.get("items") or []
+        if not items:
+            return self._answer("No corridor has enough history to rank yet.", [], trail)
+        top = items[0]
+        best = next(
+            (i for i in items if i["key"] not in PROVINCIAL_ROADS and i.get("study_spot")), None
+        )
+        m = re.search(r" (\d+(?: \d+)?) (?:million|mil|m) ", t) or re.search(r" (\d+)m ", t)
+        budget = int(float(m.group(1).replace(" ", ".")) * 1_000_000) if m else None
+        if best is None:
+            return self._answer(
+                f"{top['key']} has the most reported disruption, but no City-managed corridor "
+                "has a hotspot the street simulator can model yet.",
+                [{"type": "navigate", "view": "intersections"}],
+                trail,
+            )
+        spot = best["study_spot"]
+        if best["key"] == top["key"]:
+            lead = f"{best['key']} has the most reported disruption and the City can act on it."
+        else:
+            lead = (
+                f"{top['key']} has the most reported disruption, but the best road the City "
+                f"can act on and the simulator can model is {best['key']}."
+            )
+        provincial = [i["key"] for i in items[: items.index(best)] if i["key"] in PROVINCIAL_ROADS]
+        why = (
+            f" {' and '.join(provincial)} {'is a provincial highway' if len(provincial) == 1 else 'are provincial highways'} "
+            "(Alberta Transportation), so a City budget cannot go there."
+            if provincial
+            else ""
+        )
+        lo, hi = best["interval_80"]
+        money = (
+            f" Set the study's capital budget to ${budget:,} in step 2: it compares signal, "
+            "turn-lane and incident-clearance options within that budget, and the cost & "
+            "budget stress test checks the pick still wins if costs run 20-50% over."
+            if budget
+            else ""
+        )
+        return self._answer(
+            f"{lead} Start with a study at {spot}.{why} {best['key']}: about "
+            f"{best['expected']:.0f} reported incidents expected in the next 28 days "
+            f"({lo}-{hi}), busiest {best['peak_window']}; {spot} has "
+            f"{best['study_spot_incidents']} incidents and fits the street simulator.{money}",
+            [{"type": "study", "intersection": spot}],
+            trail,
         )
 
     async def _summary(self, trail):
