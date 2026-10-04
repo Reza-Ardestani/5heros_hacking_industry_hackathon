@@ -2,6 +2,12 @@
 
 ## Shared design tokens — later user request
 
+Delivery check after incorporating remote deployment setup: 32 backend tests
+passed, frontend production build passed, and Ruff passed after correcting the
+executable bits of two existing shebang scripts. PowerPoint plus unchanged recorded
+report/source hash are tracked under docs/demo/presentation/ for teammate access.
+Hosted deployment remains a separate acceptance boundary.
+
 Implemented FR-10 / DES-BB-UI-001: 66 JSON-source tokens, generated CSS and scoped
 contrast report, generation command wired into frontend prebuild, usage/rationale,
 and a browser gallery with explicitly illustrative specimens. Base typography,
