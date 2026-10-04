@@ -68,3 +68,36 @@ def test_eleven_labs_key_is_accepted_as_an_alternative_name(monkeypatch):
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     monkeypatch.setenv("ELEVEN_LABS_KEY", "alt-key")
     assert elevenlabs.available()
+
+
+def test_transcribe_posts_multipart_audio_and_returns_text(monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key")
+    seen = {}
+
+    def opener(request, timeout):
+        seen.update(
+            url=request.full_url, ctype=request.get_header("Content-type"), body=request.data
+        )
+        return FakeResponse(json.dumps({"text": "  Where should we\nstudy first? "}).encode())
+
+    text = elevenlabs.transcribe(b"WEBM-AUDIO", "audio/webm;codecs=opus", opener)
+    assert text == "Where should we study first?"
+    assert seen["url"].endswith("/v1/speech-to-text")
+    assert seen["ctype"].startswith("multipart/form-data; boundary=")
+    assert b'name="model_id"' in seen["body"] and b"scribe_v1" in seen["body"]
+    assert b'filename="question.webm"' in seen["body"] and b"WEBM-AUDIO" in seen["body"]
+
+
+def test_transcribe_endpoint_handles_no_key_empty_and_ok(monkeypatch):
+    client = TestClient(app)
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.delenv("ELEVEN_LABS_KEY", raising=False)
+    headers = {"Content-Type": "audio/webm"}
+    assert client.post("/api/speech/transcribe", content=b"x", headers=headers).status_code == 503
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key")
+    assert client.post("/api/speech/transcribe", content=b"", headers=headers).status_code == 422
+    monkeypatch.setattr(
+        elevenlabs, "transcribe", lambda audio, ctype: f"{len(audio)} bytes {ctype}"
+    )
+    r = client.post("/api/speech/transcribe", content=b"abcd", headers=headers)
+    assert r.status_code == 200 and r.json() == {"text": "4 bytes audio/webm"}

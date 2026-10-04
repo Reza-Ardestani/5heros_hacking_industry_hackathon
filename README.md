@@ -100,13 +100,15 @@ runs on port 8000. To share: Ports tab → right-click 8080 → Port Visibility 
 Switch branch from the terminal with `bb-start <branch>` (any branch with
 `backend/app/deploy.py`). Free accounts get 120 core-hours a month; idle codespaces stop.
 
-## Optional: ElevenLabs voice for chat replies
+## Optional: ElevenLabs voice chat
 
-Set `ELEVENLABS_API_KEY` in the API's environment (in Codespaces: a Codespaces secret,
-then restart with `bb-start`) and each assistant reply gets a read-aloud button. The
-backend calls ElevenLabs text-to-speech (`POST /api/speech`, MP3), so the key never
-reaches the browser. Optional: `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL`. Without a key
-the button is hidden and nothing else changes. Never commit the key.
+Set `ELEVENLABS_API_KEY` (or `ELEVEN_LABS_KEY`) in the API's environment (in Codespaces:
+a Codespaces secret, then restart with `bb-start`). The chat then gets a microphone:
+speak a question, ElevenLabs transcribes it (`POST /api/speech/transcribe`), the
+assistant answers and the reply is read aloud (`POST /api/speech`, MP3). Every reply
+also has a read-aloud button. The key stays on the server. Optional:
+`ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL`, `ELEVENLABS_STT_MODEL`. Without a key the voice
+buttons are hidden and nothing else changes. Never commit the key.
 
 ## Deploy (Google Cloud Run)
 

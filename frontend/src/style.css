@@ -3673,3 +3673,26 @@ main {
 .chat-speak:hover {
   background: #e8f3eb;
 }
+
+/* ElevenLabs voice input (ChatDock) */
+.chat-mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  border: 1px solid #dbe4e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #16796c;
+}
+.chat-mic.recording {
+  background: #fbe9e7;
+  border-color: #e3a49b;
+  color: #b2402f;
+  animation: chat-mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes chat-mic-pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba(178, 64, 47, 0.18);
+  }
+}

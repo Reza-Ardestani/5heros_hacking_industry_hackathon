@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, MessageSquare, Send, Square, Volume2, X } from "lucide-react";
+import { ChevronDown, Loader2, MessageSquare, Mic, Send, Square, Volume2, X } from "lucide-react";
 import { request } from "../lib/api";
 import type { ChatAction, ChatReply } from "../types";
 
@@ -46,7 +46,9 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
     } | null>(null);
   const listRef = useRef<HTMLDivElement>(null),
     inputRef = useRef<HTMLInputElement>(null),
-    audioRef = useRef<HTMLAudioElement | null>(null);
+    audioRef = useRef<HTMLAudioElement | null>(null),
+    recorderRef = useRef<MediaRecorder | null>(null);
+  const [listening, setListening] = useState<"idle" | "recording" | "transcribing">("idle");
 
   useEffect(() => {
     request<{ mode: "builtin" | "claude"; suggestions: string[] }>("/api/chat/info")
@@ -101,7 +103,8 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  const send = async (text: string) => {
+  // spoken = the question came from the microphone, so read the answer aloud too.
+  const send = async (text: string, spoken = false) => {
     const message = text.trim();
     if (!message || busy) return;
     const history = messages
@@ -137,11 +140,65 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
           notice: r.notice,
         },
       ]);
+      // The user message sits at messages.length, so the reply lands one after it.
+      if (spoken && canSpeak) void speak(messages.length + 1, r.reply);
     } catch (e) {
       setMessages((m) => [...m, { role: "assistant", content: (e as Error).message, error: true }]);
     } finally {
       setBusy(false);
     }
+  };
+
+  const stopRecording = () =>
+    recorderRef.current?.state === "recording" && recorderRef.current.stop();
+  const startRecording = async () => {
+    stopSpeaking();
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: "Microphone access was blocked; allow it in the browser to speak.",
+          error: true,
+        },
+      ]);
+      return;
+    }
+    const recorder = new MediaRecorder(stream);
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      recorderRef.current = null;
+      setListening("transcribing");
+      try {
+        const audio = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        const r = await fetch("/api/speech/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": audio.type },
+          body: audio,
+        });
+        const data = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(data?.detail ?? `Transcription failed (${r.status})`);
+        if (!data?.text)
+          throw new Error("Didn't catch that; try again a little closer to the mic.");
+        setListening("idle");
+        await send(data.text, true);
+      } catch (e) {
+        setListening("idle");
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", content: (e as Error).message, error: true },
+        ]);
+      }
+    };
+    recorderRef.current = recorder;
+    recorder.start();
+    setListening("recording");
+    setTimeout(() => recorder.state === "recording" && recorder.stop(), 60_000);
   };
 
   if (!open)
@@ -239,9 +296,33 @@ export function ChatDock({ onAction }: { onAction: (a: ChatAction) => Promise<vo
           value={input}
           maxLength={2000}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. forecast Stoney Trail next 14 days"
+          placeholder={
+            listening === "recording"
+              ? "Listening… click the square to send"
+              : listening === "transcribing"
+                ? "Transcribing with ElevenLabs…"
+                : "e.g. forecast Stoney Trail next 14 days"
+          }
           aria-label="Message"
         />
+        {canSpeak && (
+          <button
+            type="button"
+            className={`chat-mic ${listening}`}
+            disabled={busy || listening === "transcribing"}
+            onClick={() => (listening === "recording" ? stopRecording() : startRecording())}
+            aria-label={listening === "recording" ? "Stop and send" : "Ask by voice (ElevenLabs)"}
+            title={listening === "recording" ? "Stop and send" : "Ask by voice (ElevenLabs)"}
+          >
+            {listening === "recording" ? (
+              <Square size={14} />
+            ) : listening === "transcribing" ? (
+              <Loader2 size={15} className="spin" />
+            ) : (
+              <Mic size={15} />
+            )}
+          </button>
+        )}
         <button className="button primary" disabled={busy || !input.trim()} aria-label="Send">
           <Send size={15} />
         </button>

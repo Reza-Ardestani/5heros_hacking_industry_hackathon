@@ -4,7 +4,9 @@ import threading
 from contextlib import asynccontextmanager
 from urllib.request import Request, urlopen
 
+import anyio
 from fastapi import FastAPI, HTTPException
+from fastapi import Request as HttpRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -334,6 +336,23 @@ def speech(body: SpeechRequest):
     except elevenlabs.SpeechFailed as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
     return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/speech/transcribe")
+async def speech_transcribe(request: HttpRequest):
+    """Transcribe a spoken question (raw audio body, e.g. audio/webm) with ElevenLabs."""
+    audio = await request.body()
+    try:
+        text = await anyio.to_thread.run_sync(
+            elevenlabs.transcribe, audio, request.headers.get("content-type", "")
+        )
+    except elevenlabs.SpeechUnavailable as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except elevenlabs.SpeechFailed as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"text": text}
 
 
 @app.post("/api/jobs", status_code=202)
