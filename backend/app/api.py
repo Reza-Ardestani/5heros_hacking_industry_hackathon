@@ -7,8 +7,10 @@ from urllib.request import Request, urlopen
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from app.application import disruptions, intersection_study
+from app.application.assistant import SUGGESTIONS, Assistant, chat_mode
 from app.application.jobs import BusyError, JobManager
 from app.application.planner import PlanningService
 from app.application.simulation_log import SimulationRecorder
@@ -263,6 +265,30 @@ def disruption_intersection_estimate(key: str, refresh: bool = False):
 @app.get("/api/disruptions/live")
 def disruption_live(refresh: bool = False):
     return _disruption_data(disruptions.live, refresh)
+
+
+assistant = Assistant()
+
+
+class ChatTurn(BaseModel):
+    role: str
+    content: str = Field(max_length=4000)
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[ChatTurn] = Field(default_factory=list, max_length=20)
+
+
+@app.post("/api/chat")
+async def chat(body: ChatRequest):
+    """Answer a question with the MCP tools; returns text plus UI actions."""
+    return await assistant.reply(body.message, [t.model_dump() for t in body.history])
+
+
+@app.get("/api/chat/info")
+def chat_info():
+    return {"mode": chat_mode(), "suggestions": SUGGESTIONS}
 
 
 @app.post("/api/jobs", status_code=202)

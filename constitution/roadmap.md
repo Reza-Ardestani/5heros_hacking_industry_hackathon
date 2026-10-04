@@ -22,6 +22,12 @@ clearance / turn-bay / turn-ban options weighted by observed incident frequency,
 seconds of delay per incident, evidence summary, click-a-dot area focus and the
 `mcp-info-ml` tab.
 
+## Phase 4 — chat assistant (done October 3)
+
+[Spec](../specs/features/phase-4-chat-assistant/requirements.md): bottom chat dock that
+answers with the MCP tools and moves the UI (pages, intersections, quadrant, prediction
+panel, `mcp-info-ml`, intersection studies); built-in by default, Claude optional.
+
 ## Later
 
 Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal

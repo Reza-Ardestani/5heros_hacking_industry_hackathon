@@ -14,6 +14,7 @@ import {
 
 import type {
   AreaFocus,
+  ExplorerCommand,
   IncidentEstimate,
   IntersectionStudy,
   DisruptionSummary,
@@ -120,8 +121,10 @@ function Columns({
 
 export function IntersectionExplorer({
   onStudy,
+  command,
 }: {
   onStudy?: (study: IntersectionStudy) => void;
+  command?: ExplorerCommand | null;
 }) {
   const [summary, setSummary] = useState<DisruptionSummary | null>(null),
     [mapPoints, setMapPoints] = useState<Intersection[]>([]),
@@ -181,6 +184,35 @@ export function IntersectionExplorer({
     setArea(null);
     setPrediction(emptySelection);
   };
+
+  // Chat commands: filter, open an intersection, an area, a tab or a prediction.
+  useEffect(() => {
+    if (!command) return;
+    if (command.quadrant !== undefined) setQuadrant(command.quadrant);
+    if (command.area)
+      focusArea(
+        {
+          lat: command.area.lat,
+          lon: command.area.lon,
+          label: command.area.label ?? "Area from chat",
+          kind: "hotspot",
+        },
+        command.area.radius_m ?? radius,
+      );
+    if (command.prediction) {
+      setPrediction({ ...emptySelection, ...command.prediction } as Selection);
+      if (command.intersection) setSelected(command.intersection);
+      predictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (command.intersection) {
+      setTab(command.tab ?? "detail");
+      focus(command.intersection);
+    }
+    if (command.tab && !command.intersection) {
+      setTab(command.tab);
+      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // Re-apply only when a new command arrives.
+  }, [command?.nonce]);
 
   useEffect(() => {
     request<DisruptionSummary>("/api/disruptions/summary")

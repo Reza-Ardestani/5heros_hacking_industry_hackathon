@@ -23,7 +23,16 @@ import {
   X,
 } from "lucide-react";
 
-import type { Scenario, Incidents, IntersectionStudy, Job, View } from "./types";
+import type {
+  ChatAction,
+  ExplorerCommand,
+  Scenario,
+  Incidents,
+  IntersectionStudy,
+  Job,
+  View,
+} from "./types";
+import { ChatDock } from "./components/ChatDock";
 import { kindNote, money, number, optionName } from "./lib/format";
 import { request } from "./lib/api";
 import {
@@ -88,6 +97,29 @@ export default function App() {
     setStep(next);
     setView(next === 1 ? "problem" : next === 4 ? "compare" : "study");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const [command, setCommand] = useState<ExplorerCommand | null>(null);
+  const openStudy = (built: IntersectionStudy) => {
+    setStudy(built);
+    setScenario(built.scenario);
+    go(2);
+  };
+  // Chat replies carry actions; this is the only place they touch app state.
+  const runChatAction = async (a: ChatAction) => {
+    if (a.type === "study") {
+      openStudy(
+        await request<IntersectionStudy>(
+          `/api/disruptions/intersection/study?key=${encodeURIComponent(a.intersection)}`,
+        ),
+      );
+      return;
+    }
+    const { type: _type, view: target, step: next, ...rest } = a;
+    if (target === "intersections") {
+      setView("intersections");
+      setCommand({ ...rest, nonce: Date.now() });
+    } else if (target === "evidence") setView("evidence");
+    else go(next ?? (target === "problem" ? 1 : target === "compare" ? 4 : 2));
   };
   const changed =
     !!result && JSON.stringify(scenario) !== JSON.stringify(result.scenario);
@@ -388,13 +420,7 @@ export default function App() {
             </div>
           )}
           {view === "intersections" && (
-            <IntersectionExplorer
-              onStudy={(built: IntersectionStudy) => {
-                setStudy(built);
-                setScenario(built.scenario);
-                go(2);
-              }}
-            />
+            <IntersectionExplorer onStudy={openStudy} command={command} />
           )}
           {view === "problem" && (
             <>
@@ -1410,6 +1436,7 @@ export default function App() {
           </footer>
         </div>
       </main>
+      <ChatDock onAction={runChatAction} />
     </div>
   );
 }

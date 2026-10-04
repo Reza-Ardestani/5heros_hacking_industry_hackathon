@@ -138,6 +138,27 @@ by this build):
    comparison, per-model predictions, LightGBM feature importance, the benchmark and the
    MCP status for that area (`/api/ml-info`, `/api/ml/benchmark`, `lat/lon/radius_m`).
 
+## Chat dock (`backend/app/application/assistant.py`)
+
+The UI's chat calls `POST /api/chat` {message, history}. The API builds the MCP server
+in-process and calls its tools directly (`FastMCP.call_tool`), so the chat sees exactly
+what an external agent sees. Replies are {reply, actions, tools_used, mode}; the UI
+executes the actions:
+
+| Action | Effect in the UI |
+|---|---|
+| `navigate` view=problem/study/compare/evidence, step | Opens that page or guided step |
+| `navigate` view=intersections + intersection / quadrant / tab | Filters the list, opens the detail or the `mcp-info-ml` tab |
+| `navigate` view=intersections + prediction | Fills and runs the prediction panel |
+| `study` intersection | Builds the study (`build_intersection_study`) and opens step 2 |
+
+Built-in mode (default) recognises pages, intersections (both road names), routes,
+quadrants, horizons ("14 days", "tomorrow", "month"), models and "collisions". Claude mode
+(`ANTHROPIC_API_KEY` set) gives Claude the MCP tool schemas plus `navigate_ui`, runs a
+manual tool loop (at most six rounds) with server-side fallbacks, and falls back to
+built-in on any error. Chat is read-only: forecasts are not saved and
+`collect_latest_data` is withheld.
+
 ## Hooking into Amazon Bedrock AgentCore
 
 AgentCore Runtime's MCP contract: an ARM64 container serving stateless streamable HTTP

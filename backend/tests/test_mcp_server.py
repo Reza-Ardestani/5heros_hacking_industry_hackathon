@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-mcp = pytest.importorskip("mcp", reason="install with: uv sync --group mcp")
+mcp = pytest.importorskip("mcp", reason="install with: uv sync")
 
 from mcp.shared.memory import create_connected_server_and_client_session
 

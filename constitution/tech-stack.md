@@ -16,6 +16,12 @@ to evaluate later in the same harness. Cloud Run deployment files were added by 
 (`Dockerfile`, `.github/workflows/deploy.yml`, `deploy/`); the MCP image is
 `backend/Dockerfile.mcp`.
 
+Amended October 3 at the user's request (chat dock): `mcp` moves to the main
+dependencies because the API now calls the MCP tools in-process for the chat. The
+`anthropic` SDK is added for an optional Claude mode that runs only when the operator
+sets `ANTHROPIC_API_KEY`; the default built-in mode needs no LLM, key or network, so
+"no external LLM required" still holds. Chat never writes to the database.
+
 Backend domain/application/infra/API boundaries explicit; frontend presentation;
 SUMO owns numbers. Public data distinct from assumed flow/geometry/costs.
 Credentials ignored; source versions/SHA256/units recorded. Commands in README
