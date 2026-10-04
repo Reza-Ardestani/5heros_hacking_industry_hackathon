@@ -1,5 +1,10 @@
 # Progress
 
+October 3 (design/product docs): shared React design tokens and gallery verified;
+root [UJ_US](../UJ_US/README.md) now holds three journeys, profiles and 18 foldered
+stories. Resource eligibility is a draft, not a new integration. Editable PowerPoint
+template and newer organizer guidance captured; no organizer approval claimed.
+
 October 3: early local prototype implemented and verified. Guided four-step UI,
 actual SUMO policy-agent loop, cost/guardrail comparison and report export work.
 12 backend tests and frontend build passed; synthetic model/default demand,
