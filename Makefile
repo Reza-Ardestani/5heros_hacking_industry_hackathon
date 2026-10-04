@@ -1,4 +1,4 @@
-.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image dev dev-check db-up db-sync dev-timescale
+.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image dev dev-check db-up db-sync dev-timescale architecture
 setup:
 	cd backend && uv sync --frozen
 	cd frontend && npm ci
@@ -6,7 +6,10 @@ api:
 	cd backend && uv run uvicorn app.api:app --host 127.0.0.1 --port 8008
 web:
 	cd frontend && npm run dev -- --host 127.0.0.1 --port 5173
-test:
+architecture:
+	python3 scripts/check_architecture.py
+	cd frontend && npm run architecture
+test: architecture
 	cd backend && uv run --group mcp pytest -q
 	cd backend && uv run ruff check app tests ../scripts
 build:

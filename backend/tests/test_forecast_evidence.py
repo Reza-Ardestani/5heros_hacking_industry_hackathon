@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.api import app
 from app.application import disruptions
-from app.application.assistant import Assistant
+from app.bootstrap import create_assistant
 from app.domain import forecast
 
 
@@ -111,7 +111,7 @@ async def test_assistant_does_not_attribute_auto_winner_to_forced_model(
     monkeypatch, evaluation, expected
 ):
     monkeypatch.setenv("BB_CHAT_MODE", "builtin")
-    assistant = Assistant()
+    assistant = create_assistant()
     monkeypatch.setattr(assistant, "find_route", lambda _: None)
 
     async def call(*args):

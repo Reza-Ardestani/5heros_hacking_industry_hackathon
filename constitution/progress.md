@@ -1,5 +1,15 @@
 # Progress
 
+October 4: frontend vertical slices adopted after constitution/four-file spec.
+App reduced to navigation/composition; 14 UI tests, TypeScript/Vite build and both
+architecture guards passed.
+[Evidence](../specs/features/frontend-vertical-slices/progress.md).
+
+October 4: backend dependency boundaries refactored on `codex/clean-architecture`;
+77 tests passed, 4 opt-in Timescale tests skipped; architecture guard/scoped lint passed.
+Pydantic contracts and process-local state retained.
+[Evidence](../specs/features/clean-architecture-boundaries/progress.md).
+
 October 4: TimescaleDB/SQLite constitution and four-file spec prepared before code.
 Adapter and visible fallback implemented on `codex/timescale-sqlite-backends`;
 78 backend tests (including real Timescale faults), 12 UI tests and build passed.

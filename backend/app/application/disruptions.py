@@ -16,19 +16,19 @@ from datetime import datetime, timedelta
 from statistics import median
 
 from app.application import disruption_ingest as ingest
+from app.application.dependencies import DisruptionDependencies
 from app.application.disruption_collector import (
     Collector,
     current_snapshot,
     load_reference,
-    seed_from_exports,
 )
+from app.application.ports import DisruptionStore
+from app.domain import city_catalog, ml_forecast
 from app.domain import forecast as model
-from app.domain import ml_forecast
 from app.domain.geo import PointIndex, dist_m
-from app.infra import city_open_data
-from app.infra.disruption_store import ROOT, Store
 
-ANALYSIS = ROOT / "data" / "analysis"
+ANALYSIS = None
+_dependencies: DisruptionDependencies | None = None
 LIVE_TTL_S = 60
 NEARBY_M = 400
 LINK_M = 150  # live incident -> historic intersection linking radius
@@ -46,19 +46,34 @@ _lock = threading.Lock()
 _live_lock = threading.Lock()
 
 
-def use_store(store):
+def configure(dependencies: DisruptionDependencies):
+    global _dependencies, ANALYSIS
+    _dependencies, ANALYSIS = dependencies, dependencies.analysis_dir
+
+
+def is_configured():
+    return _dependencies is not None
+
+
+def dependencies() -> DisruptionDependencies:
+    if _dependencies is None:
+        raise RuntimeError("Configure services at the entry point before use")
+    return _dependencies
+
+
+def use_store(store: DisruptionStore):
     """Point the service at a store (tests, alternate database paths)."""
     with _lock:
         _state.update(store=store, version=None, data=None)
     _live.update(at=0.0, data=None)
 
 
-def store():
+def store() -> DisruptionStore:
     with _lock:
         if _state["store"] is None:
-            _state["store"] = Store()
+            _state["store"] = dependencies().store_factory()
         s = _state["store"]
-    seed_from_exports(s, ANALYSIS)
+    dependencies().seed_store(s)
     return s
 
 
@@ -90,13 +105,13 @@ def _load():
     runs = s.latest_successful_runs()
     manifest = {
         "retrieved_at_utc": max((r["finished_utc"] for r in runs.values()), default=None),
-        "discovered_from": city_open_data.DISCOVERED_FROM,
-        **city_open_data.LICENSE,
+        "discovered_from": city_catalog.DISCOVERED_FROM,
+        **city_catalog.LICENSE,
         "window": {"start_local": win_start.isoformat(), "months": months},
         "sources": {
             k: {"dataset": r["dataset"], "rows": r["rows"], "sha256": r["sha256"],
                 "url": r["url"], "fetched_utc": r["finished_utc"],
-                "name": city_open_data.DATASETS.get(k, (None, k))[1]}
+                "name": city_catalog.DATASETS.get(k, (None, k))[1]}
             for k, r in runs.items()
         },
         "database": s.display_path(),
@@ -667,20 +682,22 @@ def status():
 
 
 def collect_now(include_archive=True):
-    report = Collector(store()).collect(include_archive=include_archive)
+    report = Collector(store(), fetcher=dependencies().fetch_city).collect(
+        include_archive=include_archive
+    )
     return {"report": report, "status": store().stats()}
 
 
 # --------------------------------------------------------------------- live
 def _fetch(url):
-    """Kept as a seam for tests; the collector uses city_open_data.fetch."""
-    return city_open_data.get_json(url, timeout=10, attempts=1)
+    """Kept as a seam for tests; collection uses the injected City fetcher."""
+    return dependencies().get_json(url)
 
 
 def _live_fetcher(key, params=None):
-    dataset, name = city_open_data.DATASETS[key]
+    dataset, name = city_catalog.DATASETS[key]
     limit = 500 if key == "current_incidents" else 2000
-    url = city_open_data.BASE.format(dataset) + f"$limit={limit}"
+    url = city_catalog.BASE.format(dataset) + f"$limit={limit}"
     payload = _fetch(url)
     rows = json.loads(payload)
     return rows, {"key": key, "dataset": dataset, "name": name, "url": url,
@@ -790,7 +807,7 @@ def live(force=False):
             "errors": errors,
             "persisted": persist and not errors,
             "sources": {
-                k: city_open_data.DATASETS[k][0] for k in ("current_incidents", "closures")
+                k: city_catalog.DATASETS[k][0] for k in ("current_incidents", "closures")
             },
             "incidents": incidents,
             "active_closures": closures,
@@ -835,12 +852,7 @@ def ml_info():
     """What the forecasting models are, how they are chosen, and their settings."""
     from app.domain import forecast as fc
 
-    try:
-        import importlib.metadata as md
-
-        lgb_version = md.version("lightgbm")
-    except Exception:  # noqa: BLE001 - optional dependency
-        lgb_version = None
+    lgb_version = ml_forecast.library_version()
     return {
         "task": "Forecast City-reported incidents per day and time-of-day period for any selection",
         "models": [

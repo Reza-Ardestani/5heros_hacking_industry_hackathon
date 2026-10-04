@@ -159,6 +159,8 @@ observed City savings. [Recorded evidence](docs/demo/example_result.json).
 - [User journey](docs/user_journeys/planner.md), [stories](docs/user_stories/planning.md),
   [modeling index](docs/modeling.md).
 - [Design](docs/design/bottleneck-lab/design.md), [architecture](docs/diagrams/architecture.md),
+  [dependency boundaries](docs/design/clean-architecture.md) (`make architecture`),
+  [frontend slices](docs/design/frontend-vertical-slices.md),
   [execution sequence](docs/diagrams/run_sequence.md).
 - [Constitution](constitution/mission.md), [MVP contract](specs/features/phase-1-hackathon-mvp/requirements.md),
   [verified progress](specs/features/phase-1-hackathon-mvp/progress.md).

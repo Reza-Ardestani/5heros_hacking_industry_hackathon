@@ -2,11 +2,11 @@ import json
 
 from app.application.jobs import JobManager
 from app.application.planner import PlanningService
-from app.application.simulation_log import SimulationRecorder
 from app.domain.evaluation import explain_decision
 from app.domain.models import Scenario
 from app.infra.disruption_store import Store
 from app.infra.simulation import SumoSimulator
+from app.infra.simulation_log import SimulationRecorder
 
 
 def _row(id_, delay, cross=10.0, cost=0.0, feasible=True, details=()):

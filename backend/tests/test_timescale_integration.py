@@ -18,13 +18,13 @@ from mcp.shared.memory import create_connected_server_and_client_session
 
 from app.api import app
 from app.application import disruptions
-from app.application.disruption_collector import seed_from_exports
 from app.application.jobs import JobManager
 from app.application.planner import PlanningService
-from app.application.simulation_log import SimulationRecorder
 from app.domain.models import Scenario
+from app.infra.disruption_seed import seed_from_exports
 from app.infra.disruption_store import Store
 from app.infra.simulation import SumoSimulator
+from app.infra.simulation_log import SimulationRecorder
 from app.mcp_server import build_server
 
 pytestmark = pytest.mark.skipif(

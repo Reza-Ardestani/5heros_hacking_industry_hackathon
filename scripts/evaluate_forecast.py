@@ -18,7 +18,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from app.application import disruptions as D
+from app.bootstrap import configure_services
 from app.domain import forecast as F
+
+configure_services()
 
 FOLDS, TEST = 3, 28
 NP = len(F.PERIODS)

@@ -25,10 +25,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from app.application import disruptions as D
+from app.bootstrap import configure_services
+from app.domain import forecast as F
 from evaluate_forecast import build_slices
 
-from app.application import disruptions as D
-from app.domain import forecast as F
+configure_services()
 
 OUTER, TEST = 3, 28
 SIMPLICITY = ["flat", "bayes", "lightgbm"]

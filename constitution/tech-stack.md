@@ -39,3 +39,8 @@ before replication. PostgreSQL travel-time samples use a TIMESTAMPTZ hypertable.
 Both database volumes must persist across app/container replacement. This is a
 single shared SQLite volume design, not cross-host high availability.
 [Spec](../specs/features/timescale-sqlite-backends/requirements.md).
+
+October 4 frontend organization: feature-owned vertical slices using existing
+React hooks, TypeScript and Vite. Shared transport stays a thin fetch wrapper;
+TypeScript AST powers a local import-boundary guard. No new runtime dependency.
+[Spec](../specs/features/frontend-vertical-slices/requirements.md).

@@ -36,6 +36,14 @@ time-series hypertable, offline migration, health reporting, persistent DB volum
 SQLite regression and real Timescale outage/recovery verification. No production
 deployment or multi-host failover implied by local implementation.
 
+## October 4 — architecture boundaries
+
+User-authorized backend clean dependency boundaries and frontend vertical slices
+implemented locally. Frontend capability ownership, lifecycle state and public
+entry points verified by tests/build and import guards.
+[Frontend spec](../specs/features/frontend-vertical-slices/requirements.md),
+[backend spec](../specs/features/clean-architecture-boundaries/requirements.md).
+
 ## Later storage and modeling work
 
 Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal

@@ -26,6 +26,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.application import disruptions, intersection_study
+from app.bootstrap import configure_services
 
 INSTRUCTIONS = """\
 Calgary traffic disruption data (City of Calgary Open Data, Open Government Licence –
@@ -63,6 +64,7 @@ async def _run(fn, *args):
 
 
 def build_server(host="127.0.0.1", port=8000, stateless=False):
+    configure_services()
     mcp = FastMCP(
         "calgary-traffic-disruptions",
         instructions=INSTRUCTIONS,

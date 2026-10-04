@@ -10,14 +10,16 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.application import disruptions, intersection_study
-from app.application.assistant import SUGGESTIONS, Assistant, chat_mode
+from app.application.assistant import SUGGESTIONS
 from app.application.jobs import BusyError, JobManager
 from app.application.planner import PlanningService
-from app.application.simulation_log import SimulationRecorder
 from app.application.study_service import StudyService
+from app.bootstrap import configure_services, create_assistant
 from app.domain.models import Scenario
+from app.infra.chat_model import chat_mode
 from app.infra.incidents import load_incidents
 from app.infra.simulation import SumoSimulator
+from app.infra.simulation_log import SimulationRecorder
 
 
 def _background_collector(every_s: int, stop: threading.Event):
@@ -48,6 +50,7 @@ app.add_middleware(
     allow_methods=["GET", "POST"],  # POST /api/disruptions/collect triggers a poll
     allow_headers=["Content-Type"],
 )
+configure_services()
 simulator = SumoSimulator()
 jobs = JobManager(StudyService(PlanningService(simulator)), SimulationRecorder(disruptions.store))
 
@@ -288,7 +291,7 @@ def disruption_live(refresh: bool = False):
     return _disruption_data(disruptions.live, refresh)
 
 
-assistant = Assistant()
+assistant = create_assistant()
 
 
 class ChatTurn(BaseModel):
