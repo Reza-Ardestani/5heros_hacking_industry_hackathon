@@ -27,3 +27,8 @@ third forecaster; models chosen on validation days and scored on unseen test day
 self-description `/mcp-info` with live self-check (10 safe tools ok, 4 described but not
 run) mirrored at `/api/mcp-info`. Click any map dot to focus a 0.5–2 km area; list,
 prediction and the new `mcp-info-ml` tab follow it. 33 tests pass.
+
+October 3 (chat assistant): chat dock at the bottom of every page answers with the MCP
+tools (in-process) and navigates the app; built-in mode by default, optional Claude mode
+with a user-supplied key. 47 tests pass.
+[Detailed evidence](../specs/features/phase-4-chat-assistant/progress.md).

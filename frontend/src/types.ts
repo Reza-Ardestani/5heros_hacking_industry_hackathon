@@ -439,3 +439,29 @@ export type MlBenchmark = {
   best_on_test_counts: Record<string, number>;
   selected_counts: Record<string, number>;
 };
+// Chat dock: replies from POST /api/chat and the UI actions they carry.
+export type ChatArea = { lat: number; lon: number; radius_m?: number; label?: string };
+export type ChatAction =
+  | {
+      type: "navigate";
+      view: View;
+      step?: number;
+      intersection?: string;
+      quadrant?: string;
+      tab?: "detail" | "mcp-info-ml";
+      prediction?: Record<string, string | number | null>;
+      area?: ChatArea;
+    }
+  | { type: "study"; intersection: string };
+export type ChatReply = {
+  reply: string;
+  actions: ChatAction[];
+  tools_used: string[];
+  mode: "builtin" | "claude";
+  suggestions: string[];
+  notice?: string;
+};
+// A one-shot instruction to the intersection explorer; nonce makes repeats re-apply.
+export type ExplorerCommand = Omit<Extract<ChatAction, { type: "navigate" }>, "type" | "view" | "step"> & {
+  nonce: number;
+};

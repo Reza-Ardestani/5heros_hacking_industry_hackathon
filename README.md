@@ -33,6 +33,13 @@ python scripts/dev.py
 | MCP endpoint (streamable HTTP, stateless) | http://127.0.0.1:8000/mcp |
 | MCP self-description | http://127.0.0.1:8000/mcp-info (`?check=true` runs a live self-test) |
 | Same, via the API (used by the UI's `mcp-info-ml` tab) | http://127.0.0.1:8008/api/mcp-info |
+| Chat (the dock at the bottom right of the UI) | `POST http://127.0.0.1:8008/api/chat` |
+
+The chat answers with the same MCP tools and moves the UI ("top 5 hotspots in SE",
+"forecast Stoney Trail next 14 days", "simulate Glenmore Trail & Macleod Trail", "go to
+evidence"). It runs without any key. Optional: set `ANTHROPIC_API_KEY` in the API's
+environment for free-form questions answered by Claude (`claude-opus-5-5`) using the
+same tools; `BB_CHAT_MODE=builtin` turns that off. Never commit the key.
 
 `python scripts/dev.py --check` starts everything, verifies the UI, API, MCP protocol and
 `mcp-info`, then stops (exit code 1 on any failure). Ports in use? Add
@@ -106,6 +113,7 @@ instance because jobs are in memory, and scales to zero when idle.
 - Three paired evaluation seeds, ±20% sensitivity checks, full trip accounting.
 - SUMO vehicle-position playback, agent trace, cost/delay frontier, rejection reasons.
 - Exportable JSON report with inputs, hashes, per-seed metrics, assumptions and sources.
+- Chat dock that answers with the MCP tools and navigates pages, intersections and forecasts.
 
 In the recorded default experiment, revision reduced total modeled delay by
 27.17%, with cross-street mean delay up 14.80% within a 30% guardrail. The $15,000
