@@ -26,4 +26,3 @@ The four hosted blocks from left to right:
 4. "React Frontend", small supporting line "Explore · simulate · compare", simple browser icon.
 Connect Calgary Open Data to Ingestion with one clear arrow, Ingestion to TimescaleDB with one clear arrow, TimescaleDB to Backend with one clear bidirectional arrow, Backend to React Frontend with one clear bidirectional arrow. Connectors never cross text or components. Blocks balanced with big readable typography. This is an executive overview, not a detailed component diagram.
 At bottom inside hosting boundary add ONE subtle but readable note exactly "SQLite journal & fallback · TimescaleDB configurable". No other notes, no ports, no protocol labels, no autonomous AI claims, no deployment-status stamp. Keep all requested components visible but group backend internals as text only.
-
