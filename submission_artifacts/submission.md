@@ -77,3 +77,15 @@ Our main challenges are calibrating the synthetic simulation with measured Calga
 
 1. **Live webapp:** [Open Bottleneck Busters](https://bottleneck-busters-main-6xv7jvg66wh455x-8080.app.github.dev/). **Username:** `bottleneck` · **Password:** `XX5DIh2lfEFo`.
 2. **Live demo:** [Watch the demo video](https://youtu.be/mJIJ2JE7_00).
+
+## Appendix:
+
+**GitHub repository:** [Bottleneck Busters — source code, architecture, and run instructions](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon).
+
+**Project screenshots:**
+
+1. [Planning workspace](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/01-planning-workspace.jpg)
+2. [Intervention design](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/02-intervention-design.jpg)
+3. [Agent simulation](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/03-agent-simulation.jpg)
+4. [Recommendation comparison](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/04-recommendation-comparison.jpg)
+5. [Calgary intersections](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/05-calgary-intersections.jpg)
