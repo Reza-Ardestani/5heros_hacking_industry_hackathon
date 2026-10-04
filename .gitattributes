@@ -1,0 +1,2 @@
+# Shell scripts run in Linux codespaces: keep LF endings regardless of core.autocrlf.
+*.sh text eol=lf

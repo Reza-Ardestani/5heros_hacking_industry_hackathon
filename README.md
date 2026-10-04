@@ -90,6 +90,16 @@ A fresh checkout seeds its database from the committed `data/analysis` exports.
 Build output is frontend-only; `make web` uses Vite's `/api` proxy. For deployment,
 `app.deploy:app` serves the API and built frontend together (see below).
 
+## Free demo in GitHub Codespaces (no card)
+
+On GitHub: **Code → Codespaces → Create codespace on this branch**. The
+[devcontainer](.devcontainer/devcontainer.json) installs everything and starts the app on
+port 8080 (UI + API behind a shared password, user `bottleneck`; set the
+`BB_AUTH_PASSWORD` Codespaces secret, or one is generated and printed). The MCP server
+runs on port 8000. To share: Ports tab → right-click 8080 → Port Visibility → Public.
+Switch branch from the terminal with `bb-start <branch>` (any branch with
+`backend/app/deploy.py`). Free accounts get 120 core-hours a month; idle codespaces stop.
+
 ## Deploy (Google Cloud Run)
 
 One container ([Dockerfile](Dockerfile)) serves the API and built frontend behind a
