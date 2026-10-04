@@ -36,6 +36,13 @@ Bottleneck Busters was inspired by our teammate Amy Miller, who has lived in Cal
 
 ## 3. Architecture and Design
 
+The Python/FastAPI backend follows **clean architecture**: domain rules and application use cases depend on explicit interfaces, while infrastructure adapters handle City data, databases, SUMO, MCP tools, and optional chat providers. Dependencies are wired at entry points, keeping planning rules separate from external services. HTTP and MCP expose shared application services; the agent proposes interventions, evaluates SUMO trials, and revises plans against budget and cross-street constraints. SQLite provides the durable write journal and fallback, with an optional TimescaleDB mirror for synchronized reads.
+
+The React/TypeScript frontend uses **vertical slices** for studies, intersections, forecasting, assistant, and storage. Each feature owns its UI, API calls, types, and tests; shared transport, formatting, and design tokens support the slices, while the app shell manages navigation and composition. This keeps related behavior together and allows features to evolve independently. The diagram illustrates the Codespaces demo layout; the same components also run locally.
+
+[![Bottleneck Busters system architecture](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/06-architecture.png)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/06-architecture.png)
+
+Detailed design: [Backend clean architecture](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/docs/design/clean-architecture.md) · [Frontend vertical slices](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/docs/design/frontend-vertical-slices.md).
 
 ## 4. Dataset
 
