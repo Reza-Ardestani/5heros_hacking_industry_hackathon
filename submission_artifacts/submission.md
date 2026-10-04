@@ -46,8 +46,10 @@ Detailed design: [Backend clean architecture](https://github.com/Reza-Ardestani/
 
 ## 4. Dataset
 
+We use six months of [Traffic Incidents (unofficial archive)](https://data.calgary.ca/d/35ra-9556), alongside live [Current Traffic Incidents](https://data.calgary.ca/d/4jah-h97u) and [Construction Detours](https://data.calgary.ca/d/w8zq-79bq). Supporting City datasets provide [signals](https://data.calgary.ca/d/qr97-4jvx), [cameras](https://data.calgary.ca/d/k7p9-kppz), [2024 traffic volumes](https://data.calgary.ca/d/cauu-7hnw), [travel times](https://data.calgary.ca/d/aeb8-fh2w), and [road construction projects](https://data.calgary.ca/d/sizs-hgef). The committed April–early October 2026 exports contain **3,989 deduplicated incidents and 270 closures**; they describe reported disruptions, not direct measurements of congestion or intervention benefits. Contains information licensed under the Open Government Licence – City of Calgary ([terms](https://data.calgary.ca/stories/s/Open-Calgary-Terms-of-Use/u45n-7awa)).
 
 ## 5. Result
 
+In the [recorded synthetic SUMO experiment](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/docs/demo/example_result.json), the agent rejected its first signal proposal for excessive cross-street delay, then revised it to achieve **27.17% less total modeled delay** than the equal-green reference. Cross-street delay rose **14.80%**, within the 30% guardrail; the assumed CAD 15,000 intervention fit the CAD 100,000 budget, and both ±20% demand checks passed. Separately, a [current-code citywide forecast backtest](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/docs/demo/forecast_snapshot_result.json) on September 4–October 2 selected empirical Bayes: daily mean absolute error **6.116 versus 6.856 incidents** for the flat baseline, a **10.8% reduction**. These are retrospective forecasting and simulated intervention results, not field-proven Calgary savings.
 
 ## 6. Challenges and future works.

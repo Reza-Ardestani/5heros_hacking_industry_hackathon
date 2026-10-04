@@ -95,48 +95,111 @@ intentional hackathon compromises.
 
 ## Dataset
 
-The October 3 snapshot covers April–early October 2026 and combines **eight City
-of Calgary sources**: incident history, current incidents, detours, construction
-projects, cameras, signals, travel times, and 2024 traffic volumes.
+We combine **eight Calgary Open Data datasets**. The historical incident window
+starts April 1, 2026 and extends into early October; the live feeds and reference
+layers provide current or separately dated context, rather than six months of
+complete observations for every source.
 
-- **3,987 deduplicated incidents** and **270 distinct closures** in committed exports.
-- JSON evidence, a 20-sheet Excel workbook, and source URLs, retrieval times, and
-  payload hashes make the preparation inspectable.
-- A fresh checkout seeds SQLite from these exports. Incremental collection adds
-  new sightings; rebuilding the demo does not require another City download.
+| Dataset | Use in the application |
+|---|---|
+| [Traffic Incidents — unofficial archive](https://data.calgary.ca/d/35ra-9556) | Six-month incident history, location patterns, and forecast training |
+| [Current Traffic Incidents](https://data.calgary.ca/d/4jah-h97u) | Live reported disruptions and current intersection context |
+| [Construction Detours](https://data.calgary.ca/d/w8zq-79bq) | Road/lane closures, scheduled work, and nearby disruption context |
+| [Traffic Signals](https://data.calgary.ca/d/qr97-4jvx) | Match incident locations to nearby signalized intersections |
+| [Traffic Cameras](https://data.calgary.ca/d/k7p9-kppz) | Nearby camera locations and live images |
+| [Traffic Volumes for 2024](https://data.calgary.ca/d/cauu-7hnw) | Dated volume context and inputs to explicitly assumed study-demand conversions |
+| [Travel Times](https://data.calgary.ca/d/aeb8-fh2w) | Corridor travel-time observations collected as the feed is polled |
+| [Road Construction Projects](https://data.calgary.ca/d/sizs-hgef) | Major project context for interpreting disruptions |
 
-These records describe **reported disruptions**. They do not directly measure
-congestion, clearance duration, intervention impact, or exposure-adjusted crash
-risk. Older completed closures can be missing from the City's current detour feed.
+**Contains information licensed under the Open Government Licence – City of Calgary.**
+[Licence and terms of use](https://data.calgary.ca/stories/s/Open-Calgary-Terms-of-Use/u45n-7awa).
 
-Forecasts compare flat daily-average, empirical-Bayes, and LightGBM models on the
-same chronological inputs. Selection uses validation days before test scoring;
-no model wins everywhere. Forecasts support investigation, while SUMO supports
-modeled intervention comparison.
+### Preparation and coverage
 
-[Dataset, preparation, and backtests](data/analysis/README.md) ·
+The committed JSON exports currently contain **3,989 deduplicated incidents** and
+**270 distinct closures**, with **1,750 indexed intersections**. Counts are tied to
+this JSON snapshot. Incremental collection can change totals, and independently
+generated workbooks or evaluation reports may use different exports.
+
+Preparation normalizes location text, deduplicates incident updates, converts
+UTC timestamps to Calgary local time, extracts incident types and lane impacts,
+and matches nearby signals, cameras, and same-road volume segments. Attribution,
+retrieval times, source URLs, and payload hashes accompany the exports. A 20-sheet
+Excel workbook provides an analysis view; its counts reflect its own export date.
+A fresh checkout seeds SQLite from committed JSON without another City download.
+
+These are **reported disruptions**, not direct measurements of traffic flow,
+incident clearance duration, intervention impact, or exposure-adjusted crash risk.
+The detour feed retains current/scheduled closures, so it is not a complete archive
+of past construction: only 208 of the 270 exported closures overlap the study
+window. Incident records cannot establish the benefit of changing a signal.
+
+[Dataset preparation and historical backtests](data/analysis/README.md) ·
+[Current incident export](data/analysis/calgary_incidents_6mo.json) ·
 [Source manifest](data/analysis/sources_manifest.json) ·
 [Arrival profiles and calibration gaps](data/README.md)
 
 ## Results
 
-The recorded synthetic default experiment selected a revised signal plan against
-an **equal-green reference**, using three paired hold-out seeds and ±20% demand
-stress checks.
+Forecasting identifies locations worth investigating. Simulation compares
+interventions. Their metrics answer different questions and use separate baselines.
 
-| Recorded outcome | Value |
-|---|---|
-| Total modeled delay reduction | **27.17%** |
-| Cross-street mean delay increase | **14.80%**, within the configured 30% guardrail |
-| Retiming capital cost | **CAD 15,000**, an editable assumption |
-| Trip accounting | All trips completed across the three evaluation seeds |
-| Demand sensitivity | Both recorded stress checks passed |
+### Incident forecasting
 
-These are preliminary simulator outputs for the recorded inputs, not observed
-City savings. The report includes per-seed metrics, demand/network hashes,
-assumptions, sources, and rejected alternatives.
+We re-ran the current forecasting code on the **3,989-incident committed export**.
+The evaluation uses 184 complete observed days from April 1–October 2, excluding
+September 17 as a zero-record coverage gap and October 3 as an incomplete day.
+The final test contains **28 observed days, September 4–October 2**. Model choice
+uses four rolling 14-day validation windows before the test; test days do not
+choose the model. The final test models fit the same 156 pre-test observed days.
 
-[Recorded result](docs/demo/example_result.json) ·
+| Model | Test daily MAE, incidents/day | Coverage of nominal 80% daily range |
+|---|---:|---:|
+| Flat daily-average reference | 6.856 | 78.6% |
+| **Empirical Bayes — selected** | **6.116** | **78.6%** |
+| LightGBM challenger | 6.229 | 82.1% |
+
+The selected forecast reduced mean absolute error by **10.8%** relative to the
+flat reference on this window. Empirical Bayes models weekday/time-of-day rates
+with 16 pseudo-weeks of shrinkage; LightGBM competes using calendar and historical
+rate features. The current rule keeps Bayes unless a challenger improves validation
+error by more than two paired standard errors. Negative-binomial ranges account
+for variation beyond Poisson counts, using dispersion estimated from training data.
+
+This is a single citywide retrospective window. It does not establish
+performance at every intersection or future operational accuracy. Settings were
+developed using this historical period; confirmation on fresh months remains open.
+Forecasts predict reported incident counts, rather than congestion, delay, or the
+benefit of an intervention.
+
+[Reproduced forecast evidence, code commit, settings, and dataset hash](docs/demo/forecast_snapshot_result.json).
+
+### Simulation and autonomous revision
+
+The recorded synthetic default study used an **equal-green reference**, a
+**CAD 100,000 budget**, a **30% cross-street delay guardrail**, and three paired
+hold-out seeds (143, 244, 345). Every alternative used equivalent arrival inputs.
+
+| Option | Mean delay per vehicle | Assumed capital | Decision |
+|---|---:|---:|---|
+| Equal-green reference | 196.9 s | CAD 0 | Feasible reference |
+| First signal proposal | 54.0 s | CAD 15,000 | Rejected: cross-street delay rose 88.96% |
+| **Revised signal plan** | **143.3 s** | **CAD 15,000** | **Recommended: cross-street delay rose 14.80%** |
+| Extra arterial lane | 80.7 s | CAD 1,200,000 | Rejected: over budget |
+
+The agent's revision reduced **total modeled delay by 27.17%** while meeting both
+constraints. All planned trips completed across the three evaluation seeds.
+At 80% and 120% demand, the revised plan remained feasible and reduced total
+modeled delay by **22.80%** and **22.77%**, respectively, against references using
+the same changed demand. These figures come from the recorded simulation report.
+
+Cost/budget sensitivity re-applies the selection rule to scaled costs and budgets;
+it does not simulate new traffic. A plan selected for lower delay is not necessarily
+a financially attractive investment. Costs, occupancy, time value, and annualization
+remain assumptions, and the corridor/default arrivals are synthetic. These results
+show the decision process, not observed savings on Calgary roads.
+
+[Recorded simulation result](docs/demo/example_result.json) ·
 [Metric definitions](data/README.md#what-the-simulator-measures) ·
 [Current implementation evidence](constitution/progress.md)
 
@@ -145,8 +208,8 @@ assumptions, sources, and rejected alternatives.
 - **Calibrate before field claims.** Obtain a dated CalTRACS count study, observed
   timings, movements, queues, and travel times; inspect the network and fit the
   reference before comparing alternatives.
-- **Improve forecast uncertainty.** Sparse selections can lose to a flat average;
-  Poisson ranges need stronger treatment of day-to-day variability.
+- **Validate forecast uncertainty.** Sparse selections can lose to a flat average;
+  confirm negative-binomial ranges and model selection on fresh months and holidays.
 - **Validate feasibility and economics.** Intervention costs are estimates.
   Materials, equipment, maintenance, and availability integrations remain planned.
 - **Move beyond the demo.** Durable jobs, managed storage/collection, broader
