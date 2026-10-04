@@ -13,6 +13,6 @@ Status: **Forecast/backtest exists locally; LightGBM/auto selection is remote-br
 - History window, sparse-data behavior and flat baseline are visible.
 - Candidate models and held-out evidence are reported when that branch is adopted.
 
-Source-level evidence: [frontend/src/components/PredictionPanel.tsx](../../../../frontend/src/components/PredictionPanel.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/forecasting/PredictionPanel.tsx](../../../../frontend/src/features/forecasting/PredictionPanel.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
 
 Remote additions: [immutable branch inventory](../../../../docs/product_research/dashboard_branch_inventory.md). They have not been merged in this work.

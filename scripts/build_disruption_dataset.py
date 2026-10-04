@@ -25,7 +25,12 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.application import disruptions
 from app.application.disruption_collector import Collector
 from app.application.disruption_ingest import CAMERA_RADIUS_M, SIGNAL_RADIUS_M
+from app.bootstrap import configure_services
+from app.infra import city_open_data
 from app.infra.disruption_store import Store
+from app.infra.raw_sink import JsonRawSink
+
+configure_services()
 
 
 def main():
@@ -41,7 +46,9 @@ def main():
     store = Store(args.db)
     if not args.export_only:
         print(f"Backfilling {args.months} months into {store.path} …")
-        report = Collector(store, raw_dir=args.raw).backfill(args.months)
+        report = Collector(
+            store, fetcher=city_open_data.fetch, raw_sink=JsonRawSink(args.raw)
+        ).backfill(args.months)
         for key, r in report.items():
             print(f"  {key}: {r}")
         failed = [k for k, r in report.items() if r["status"] != "ok"]

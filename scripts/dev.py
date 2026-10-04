@@ -145,8 +145,14 @@ def check(api, web, mcp):
         assert info["reachable"], info
         return f"API mirror reachable -> {info['probed_url']}"
 
-    for name, fn in [("UI", ui), ("API", api_health), ("MCP streamable HTTP", mcp_protocol),
-                     ("MCP /mcp-info", mcp_info), ("API /api/mcp-info", api_mcp_info)]:  # fmt: skip
+    checks = [("UI", ui), ("API", api_health)]
+    if mcp is not None:
+        checks.extend([
+            ("MCP streamable HTTP", mcp_protocol),
+            ("MCP /mcp-info", mcp_info),
+            ("API /api/mcp-info", api_mcp_info),
+        ])
+    for name, fn in checks:
         record(name, fn)
     for name, ok, detail in results:
         print(f"[check] {'PASS' if ok else 'FAIL'}  {name}: {detail}", flush=True)

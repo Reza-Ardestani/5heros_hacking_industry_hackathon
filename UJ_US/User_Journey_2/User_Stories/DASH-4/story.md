@@ -13,4 +13,4 @@ Status: **Intersection prefill local; generalized frozen handoff proposed**. Thi
 - Prefilled demand/geometry factors expose their assumptions.
 - Proposed resource-readiness handoff links to UJ-3 and BB-8.
 
-Source-level evidence: [frontend/src/components/IntersectionExplorer.tsx](../../../../frontend/src/components/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/intersections/IntersectionExplorer.tsx](../../../../frontend/src/features/intersections/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.

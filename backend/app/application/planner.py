@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, datetime
 
+from app.application.ports import Simulator
 from app.domain.evaluation import (
     aggregate,
     compare,
@@ -31,7 +32,7 @@ def mix(normal: dict, incident: dict, weight: float) -> dict:
 
 
 class PlanningService:
-    def __init__(self, simulator):
+    def __init__(self, simulator: Simulator):
         self.simulator = simulator
 
     def run(self, scenario: Scenario, emit, context=None) -> dict:

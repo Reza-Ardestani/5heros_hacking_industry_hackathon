@@ -21,13 +21,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.application.disruption_collector import Collector, seed_from_exports
+from app.application.disruption_collector import Collector
+from app.bootstrap import configure_services
+from app.infra import city_open_data
+from app.infra.disruption_seed import seed_from_exports
 from app.infra.disruption_store import Store
+
+configure_services()
 
 
 def poll(store, include_archive, export):
     started = time.strftime("%Y-%m-%d %H:%M:%S")
-    report = Collector(store).collect(include_archive=include_archive)
+    report = Collector(store, fetcher=city_open_data.fetch).collect(include_archive=include_archive)
     summary = {
         k: (v["status"], v.get("inserted", 0), v.get("updated", 0)) for k, v in report.items()
     }

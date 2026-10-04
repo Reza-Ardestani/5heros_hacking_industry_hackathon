@@ -1,0 +1,79 @@
+{
+  "source": "data/analysis/calgary_incidents_6mo.json",
+  "sha256": "de14ca309e48f2c2f9f8ffe884db6fe61da3b9a0dab7f2c33fcd6d8c69986aea",
+  "snapshot_incidents": 3989,
+  "window_start": "2026-04-01",
+  "last_complete_day": "2026-10-02",
+  "excluded_zero_record_days": [
+    "2026-09-17"
+  ],
+  "observed_days": 184,
+  "evaluated_with": "app.domain.forecast.select_and_backtest on current main",
+  "backtest": {
+    "train_days": 156,
+    "validation_start": "2026-07-10",
+    "validation_end": "2026-09-03",
+    "validation_folds": 4,
+    "test_days": 28,
+    "test_start": "2026-09-04",
+    "test_end": "2026-10-02",
+    "selected_model": "bayes",
+    "selected_label": "Weekday x period rates (empirical Bayes)",
+    "selection_rule": "Bayes unless another model has lower daily error by more than 2 standard errors across 4 rolling 14-day validation windows; test days were not used to choose.",
+    "selection_evidence": {
+      "challenger": "flat",
+      "daily_mae_gain": 0.005,
+      "standard_error": 0.469,
+      "z": 0.01,
+      "threshold_z": 2.0
+    },
+    "models": {
+      "flat": {
+        "label": "Flat daily average (baseline)",
+        "validation_daily_mae": 4.782,
+        "test_daily_mae": 6.856,
+        "test_expected": 602.4,
+        "test_interval_80_coverage_pct": 78.6
+      },
+      "bayes": {
+        "label": "Weekday x period rates (empirical Bayes)",
+        "validation_daily_mae": 4.788,
+        "test_daily_mae": 6.116,
+        "test_expected": 596.1,
+        "test_interval_80_coverage_pct": 78.6
+      },
+      "lightgbm": {
+        "label": "LightGBM (Poisson gradient-boosted trees)",
+        "validation_daily_mae": 5.41,
+        "test_daily_mae": 6.229,
+        "test_expected": 635.6,
+        "test_interval_80_coverage_pct": 82.1
+      }
+    },
+    "not_eligible": [],
+    "actual_test_incidents": 625,
+    "model_expected_test_incidents": 596.1,
+    "model_daily_mae": 6.116,
+    "baseline": "Flat daily average over the same training days",
+    "baseline_daily_mae": 6.856,
+    "improvement_vs_baseline_pct": 10.8,
+    "interval_80_coverage_pct": 78.6,
+    "dispersion": 0.0791
+  },
+  "evaluation_date": "2026-10-04",
+  "source_code_commit": "93a94381698ad8f42aa722145bacc1ded2408ca8",
+  "lightgbm_version": "4.7.0",
+  "settings": {
+    "prior_weeks": 16.0,
+    "validation_folds": 4,
+    "validation_fold_days": 14,
+    "switch_standard_errors": 2.0,
+    "interval": "negative binomial; dispersion from citywide training days"
+  },
+  "limitations": [
+    "Single citywide 28-day test window; not the four-window evaluation from the separately supplied October 3 branch report.",
+    "Zero-record day 2026-09-17 treated as a coverage gap, not proof of zero incidents.",
+    "Forecast settings were developed using this historical period; a new future holdout remains necessary.",
+    "Reported incident counts do not measure delay or prove intervention benefits."
+  ]
+}

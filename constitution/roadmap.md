@@ -28,7 +28,33 @@ seconds of delay per incident, evidence summary, click-a-dot area focus and the
 answers with the MCP tools and moves the UI (pages, intersections, quadrant, prediction
 panel, `mcp-info-ml`, intersection studies); built-in by default, Claude optional.
 
-## Later
+## Selected October 4 — dual storage
+
+User authorized [TimescaleDB with SQLite fallback](../specs/features/timescale-sqlite-backends/requirements.md).
+Implement after constitution/spec: durable local journal, ordered replication,
+time-series hypertable, offline migration, health reporting, persistent DB volume,
+SQLite regression and real Timescale outage/recovery verification. No production
+deployment or multi-host failover implied by local implementation.
+
+## October 4 — architecture boundaries
+
+User-authorized backend clean dependency boundaries and frontend vertical slices
+implemented locally. Frontend capability ownership, lifecycle state and public
+entry points verified by tests/build and import guards.
+[Frontend spec](../specs/features/frontend-vertical-slices/requirements.md),
+[backend spec](../specs/features/clean-architecture-boundaries/requirements.md).
+
+## Later storage and modeling work
+
+October 4 user-authorized repository health corrections: fix confirmed launcher,
+lint and documentation defects while preserving the submitted issue and
+submission_artifacts/submission.md. No product behavior/model changes planned.
+[Spec](../specs/features/repository-health/requirements.md).
+
+October 4 user-authorized README/demo onboarding: present the problem, journeys,
+architecture images, datasets and bounded results using the submission structure;
+finish with verified Makefile commands for separate or combined API/UI startup.
+[Spec](../specs/features/readme-demo-onboarding/requirements.md).
 
 Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal
 mappings; redirect-to-parallel-route option; evaluate Chronos-2 as a fourth forecaster in

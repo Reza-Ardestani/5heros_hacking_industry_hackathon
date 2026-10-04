@@ -3,6 +3,10 @@
 October 3, 2026. Spec: [S-BB-2](../../../specs/features/phase-2-disruption-context/requirements.md).
 Data reference and figures: [data/analysis/README.md](../../../data/analysis/README.md).
 
+October 4 storage extension: [TimescaleDB with SQLite fallback](../timescale-sqlite/design.md)
+adds an optional mirror; SQLite remains the durable write authority. This document
+describes the original data platform. See [operation and deployment limits](../../ops/storage.md).
+
 ## What it does
 
 City of Calgary open data (incidents, closures, travel times, cameras, signals, 2024
@@ -39,7 +43,7 @@ Layering follows the constitution: `domain/` is pure (rules, geometry, forecast)
 `application/` coordinates, `infra/` owns I/O (HTTP client, SQLite), and the API and MCP
 server are thin adapters over the same service.
 
-## Database schema (`backend/app/infra/disruption_store.py`)
+## Database schema (`backend/app/infra/sqlite_store.py`)
 
 | Table | Key | Holds | Why |
 |---|---|---|---|
@@ -178,12 +182,11 @@ Gateway as a tool target. **Not done in this build:** the image has not been bui
 inbound auth or ECR push. Stateless HTTP mode itself was verified locally with an MCP
 client.
 
-Production storage: a container's SQLite file is ephemeral. Seeded data is read-only
-context, and live sightings or predictions written inside a session are lost when it
-ends. For durable dynamic data, run the collector as a scheduled job (EventBridge
-Scheduler → ECS/Lambda) writing to a managed database (e.g. Aurora PostgreSQL), and
-point the store at it. `Store` is the only class that touches SQL, so that is the swap
-point. Not implemented.
+Production storage: an unmounted container's SQLite file is ephemeral. The October 4
+adapter can mirror to Timescale, but durable fallback requires a persistent local
+SQLite directory too. Independent ephemeral replicas cannot share one mirror.
+Scheduled collection and cloud deployment remain separate work; see the storage
+extension's operating guide before enabling this mode in a hosted service.
 
 ## Limits
 

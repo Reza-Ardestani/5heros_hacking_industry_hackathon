@@ -13,4 +13,4 @@ Status: **Implemented reports and economic estimates; savings remain modeled**. 
 - Cost-delay alternatives and side-road effects remain visible.
 - Economic values identify currency, horizon and editable assumptions.
 
-Source-level evidence: [frontend/src/components/DecisionExplain.tsx](../../../../frontend/src/components/DecisionExplain.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/studies/DecisionExplain.tsx](../../../../frontend/src/features/studies/DecisionExplain.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.

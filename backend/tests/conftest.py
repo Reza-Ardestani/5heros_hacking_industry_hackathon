@@ -1,8 +1,11 @@
 import pytest
 
 from app.application import disruptions
-from app.application.disruption_collector import seed_from_exports
+from app.bootstrap import configure_services
+from app.infra.disruption_seed import seed_from_exports
 from app.infra.disruption_store import Store
+
+configure_services()
 
 
 @pytest.fixture(scope="session", autouse=True)

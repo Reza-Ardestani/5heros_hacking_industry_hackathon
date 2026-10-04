@@ -1,0 +1,28 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.23.1-pg17
+    environment:
+      POSTGRES_DB: bottleneck_busters
+      POSTGRES_USER: bottleneck
+      POSTGRES_PASSWORD: ${BB_TIMESCALE_PASSWORD:?Set BB_TIMESCALE_PASSWORD in .env.timescale}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=timescaledb
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=30
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bottleneck -d bottleneck_busters"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  timescale_data:

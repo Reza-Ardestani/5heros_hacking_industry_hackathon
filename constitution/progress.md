@@ -1,5 +1,35 @@
 # Progress
 
+October 4: repository health fixes verified: optional-MCP startup check, script
+lint/modes and seven source links corrected. 79 backend tests, 14 UI tests, build,
+full lint and both startup modes passed; submission untouched.
+[Evidence](../specs/features/repository-health/progress.md).
+
+October 4: README refreshed from submission structure with both architecture
+images and final Makefile run guide. Combined API/UI/MCP smoke check, local
+links and shutdown verified. [Evidence](../specs/features/readme-demo-onboarding/progress.md).
+
+October 4: frontend vertical slices adopted after constitution/four-file spec.
+App reduced to navigation/composition; 14 UI tests, TypeScript/Vite build and both
+architecture guards passed.
+[Evidence](../specs/features/frontend-vertical-slices/progress.md).
+
+October 4: backend dependency boundaries refactored on `codex/clean-architecture`;
+77 tests passed, 4 opt-in Timescale tests skipped; architecture guard/scoped lint passed.
+Pydantic contracts and process-local state retained.
+[Evidence](../specs/features/clean-architecture-boundaries/progress.md).
+
+October 4: TimescaleDB/SQLite constitution and four-file spec prepared before code.
+Adapter and visible fallback implemented on `codex/timescale-sqlite-backends`;
+78 backend tests (including real Timescale faults), 12 UI tests and build passed.
+Scoped lint passed; four existing full-lint permission errors remain. Not deployed.
+[Evidence](../specs/features/timescale-sqlite-backends/progress.md).
+
+October 3 (scoped corrections): actual-model forecast evidence and shared simulation
+status implemented on `codex/fix-forecast-and-job-status`; three independent reviews
+completed, 68 backend tests, 10 UI tests and local browser flow passed.
+[Details and limits](../specs/features/fix-forecast-evidence-and-job-status/progress.md).
+
 October 3 (design/product docs): shared React design tokens and gallery verified;
 root [UJ_US](../UJ_US/README.md) now holds three journeys, profiles and 18 foldered
 stories. Resource eligibility is a draft, not a new integration. Editable PowerPoint

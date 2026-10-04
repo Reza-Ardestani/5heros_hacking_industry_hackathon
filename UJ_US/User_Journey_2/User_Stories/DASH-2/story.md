@@ -13,6 +13,6 @@ Status: **Search/quadrant/sort local; radius-focus selector remote branch**. Thi
 - Radius filter uses explicit center/distance when enabled.
 - Unknown geometry and empty results do not imply absent traffic.
 
-Source-level evidence: [frontend/src/components/IntersectionExplorer.tsx](../../../../frontend/src/components/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/intersections/IntersectionExplorer.tsx](../../../../frontend/src/features/intersections/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
 
 Remote additions: [immutable branch inventory](../../../../docs/product_research/dashboard_branch_inventory.md). They have not been merged in this work.

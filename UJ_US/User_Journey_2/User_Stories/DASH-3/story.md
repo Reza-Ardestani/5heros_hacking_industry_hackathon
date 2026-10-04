@@ -13,4 +13,4 @@ Status: **Charts and forecast local; expanded model panel remote**. This is not 
 - Forecast is labeled modeled and links to story BB-7.
 - No incident count is automatically renamed congestion or crash risk.
 
-Source-level evidence: [frontend/src/components/PredictionPanel.tsx](../../../../frontend/src/components/PredictionPanel.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/forecasting/PredictionPanel.tsx](../../../../frontend/src/features/forecasting/PredictionPanel.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.

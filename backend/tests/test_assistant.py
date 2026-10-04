@@ -5,13 +5,14 @@ from fastapi.testclient import TestClient
 
 from app.api import app
 from app.application import disruptions
-from app.application.assistant import Assistant, chat_mode
+from app.bootstrap import create_assistant
+from app.infra.chat_model import chat_mode
 
 
 @pytest.fixture
 def builtin(monkeypatch):
     monkeypatch.setenv("BB_CHAT_MODE", "builtin")
-    return Assistant()
+    return create_assistant()
 
 
 @pytest.mark.anyio
@@ -136,7 +137,7 @@ async def test_claude_mode_runs_mcp_tools_and_navigates(monkeypatch):
     key = disruptions.list_intersections("", "", "", "incidents", 1)["items"][0]["key"]
     fake = FakeMessages(key)
     _fake_client(monkeypatch, fake)
-    r = await Assistant().reply("busiest intersection?", [{"role": "assistant", "content": "hi"}])
+    r = await create_assistant().reply("busiest intersection?", [{"role": "assistant", "content": "hi"}])
     assert r["mode"] == "claude" and r["reply"] == "Top: X."
     assert r["tools_used"] == ["search_intersections"]
     assert r["actions"] == [{"type": "navigate", "view": "intersections", "intersection": key}]
@@ -152,7 +153,7 @@ async def test_claude_mode_runs_mcp_tools_and_navigates(monkeypatch):
 @pytest.mark.anyio
 async def test_claude_failure_falls_back_to_builtin(monkeypatch):
     _fake_client(monkeypatch, FakeMessages("", fail=True))
-    r = await Assistant().reply("go to compare")
+    r = await create_assistant().reply("go to compare")
     assert r["mode"] == "builtin" and "Claude unavailable" in r["notice"]
     assert r["actions"][0]["view"] == "compare"
 

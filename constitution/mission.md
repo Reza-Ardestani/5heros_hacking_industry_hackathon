@@ -17,3 +17,7 @@ data, intersection-level studies (incident-aware simulation, signal/clearance/tu
 options) and incident forecasts, exposed to agents through an MCP server. Incident
 records locate and size disruption; improvements remain modeled, not field-proven.
 [Problem](../docs/problem_statement.md), [stories](../docs/user_stories/planning.md).
+
+October 4 storage extension: preserve collected evidence through TimescaleDB
+outages and app restarts, with explicit storage health and auditable recovery.
+Storage resilience does not change the evidentiary limits of incident data.

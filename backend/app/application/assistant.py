@@ -16,12 +16,11 @@ Chat never writes: predictions are not saved and collect_latest_data is not offe
 """
 
 import json
-import os
 import re
 
 from app.application import disruptions
+from app.application.ports import ChatModel, ToolGateway
 
-MODEL = "claude-opus-5-5"
 MAX_TOOL_ROUNDS = 6
 HISTORY_TURNS = 10
 CHAT_EXCLUDED_TOOLS = {"collect_latest_data"}  # polls the City and writes
@@ -92,54 +91,22 @@ def _has(text, phrase):
     return bool(phrase) and f" {phrase} " in text
 
 
-def chat_mode():
-    """'claude' when BB_CHAT_MODE=claude, or when it is 'auto' (default) and an API key is
-    set; otherwise 'builtin'. The key itself is only read by the Anthropic SDK."""
-    mode = os.environ.get("BB_CHAT_MODE", "auto").lower()
-    if mode == "claude" or (mode == "auto" and os.environ.get("ANTHROPIC_API_KEY")):
-        return "claude"
-    return "builtin"
-
-
 class Assistant:
-    def __init__(self, server=None):
-        self._server = server
+    def __init__(self, tools: ToolGateway, model_factory=None, mode_selector=lambda: "builtin"):
+        self.tools = tools
+        self.model_factory = model_factory
+        self.mode_selector = mode_selector
         self._index = None
 
-    # MCP plumbing ---------------------------------------------------------------------
-    @property
-    def server(self):
-        if self._server is None:
-            from app.mcp_server import build_server
-
-            self._server = build_server()
-        return self._server
-
     async def call(self, name, args, trail):
-        """Call one MCP tool in-process; returns the decoded JSON result."""
         if name == "predict_disruptions":
             args = {**args, "save": False}
-        blocks = await self.server.call_tool(name, args)
-        if isinstance(blocks, tuple):  # (content, structured) on newer SDKs
-            blocks = blocks[0]
-        text = "".join(getattr(b, "text", "") for b in blocks)
+        result = await self.tools.call(name, args)
         trail.append({"tool": name, "args": args})
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return {"text": text}
+        return result
 
     async def tool_schemas(self):
-        tools = await self.server.list_tools()
-        return [
-            {
-                "name": t.name,
-                "description": " ".join((t.description or "").split()),
-                "input_schema": t.inputSchema,
-            }
-            for t in tools
-            if t.name not in CHAT_EXCLUDED_TOOLS
-        ]
+        return [tool for tool in await self.tools.schemas() if tool["name"] not in CHAT_EXCLUDED_TOOLS]
 
     # Entity lookup (cached per database version) ---------------------------------------
     def index(self):
@@ -179,7 +146,7 @@ class Assistant:
         message = (message or "").strip()[:2000]
         if not message:
             return self._answer("Ask about hotspots, forecasts, live incidents or a page.")
-        if chat_mode() == "claude":
+        if self.mode_selector() == "claude":
             try:
                 return await self.claude(message, history or [])
             except Exception as error:  # noqa: BLE001 - degrade to builtin, say why
@@ -501,15 +468,23 @@ class Assistant:
         if _has(t, "collision") or _has(t, "collisions") or _has(t, "crash"):
             args["category"] = "Collision"
         p = await self.call("predict_disruptions", args, trail)
-        b = p.get("backtest") or {}
+        b = p.get("forecast_evaluation") or {}
         lo, hi = p["interval_80"]
+        improvement = b.get("improvement_vs_baseline_pct")
         verdict = (
-            f" On the last {b['test_days']} held-out days it was "
-            f"{abs(b['improvement_vs_baseline_pct'])}% "
-            f"{'better' if b['improvement_vs_baseline_pct'] >= 0 else 'worse'} than the flat "
-            "baseline."
-            if b.get("improvement_vs_baseline_pct") is not None
-            else ""
+            f" On the last {b['test_days']} held-out days {b['label']} had "
+            + (
+                "the same error as the flat baseline."
+                if improvement == 0
+                else f"{abs(improvement)}% {'lower' if improvement > 0 else 'higher'} error "
+                "than the flat baseline."
+            )
+            if improvement is not None
+            else (
+                " No comparable held-out evaluation is available for this forecast model."
+                if not b
+                else " The flat baseline has zero error; percentage comparison is undefined."
+            )
         )
         top = p.get("top_intersections") or []
         where = f" Most likely at {top[0]['key']}." if top and not ix else ""
@@ -577,9 +552,9 @@ class Assistant:
 
     # Claude mode ---------------------------------------------------------------------
     async def claude(self, message, history):
-        import anthropic
-
-        client = anthropic.AsyncAnthropic()
+        if self.model_factory is None:
+            raise RuntimeError("Chat model is not configured")
+        client: ChatModel = self.model_factory()
         tools = [*await self.tool_schemas(), NAVIGATE_TOOL]
         messages = [
             {"role": h["role"], "content": str(h["content"])[:4000]}
@@ -592,41 +567,32 @@ class Assistant:
         messages.append({"role": "user", "content": message})
         trail, actions = [], []
         for _ in range(MAX_TOOL_ROUNDS):
-            response = await client.beta.messages.create(
-                model=MODEL,
-                max_tokens=8000,
-                thinking={"type": "adaptive"},
-                system=SYSTEM_PROMPT,
-                tools=tools,
-                messages=messages,
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
-            )
+            response = await client.complete(system=SYSTEM_PROMPT, tools=tools, messages=messages)
             if response.stop_reason == "refusal":
                 raise RuntimeError("request declined")
-            uses = [b for b in response.content if b.type == "tool_use"]
+            uses = [b for b in response.content if b["type"] == "tool_use"]
             if response.stop_reason != "tool_use" or not uses:
-                text = "".join(b.text for b in response.content if b.type == "text").strip()
+                text = "".join(b["text"] for b in response.content if b["type"] == "text").strip()
                 return self._answer(text or "Done.", actions, trail, mode="claude")
             messages.append({"role": "assistant", "content": response.content})
             results = []
             for use in uses:
                 try:
-                    if use.name == NAVIGATE_TOOL["name"]:
-                        action = _navigate_action(use.input)
+                    if use["name"] == NAVIGATE_TOOL["name"]:
+                        action = _navigate_action(use["input"])
                         actions.append(action)
                         content = json.dumps({"ok": True, "action": action})
                     else:
-                        out = await self.call(use.name, dict(use.input or {}), trail)
+                        out = await self.call(use["name"], dict(use["input"] or {}), trail)
                         content = json.dumps(out, default=str)[:60000]
                     results.append(
-                        {"type": "tool_result", "tool_use_id": use.id, "content": content}
+                        {"type": "tool_result", "tool_use_id": use["id"], "content": content}
                     )
                 except Exception as error:  # noqa: BLE001 - returned to the model
                     results.append(
                         {
                             "type": "tool_result",
-                            "tool_use_id": use.id,
+                            "tool_use_id": use["id"],
                             "is_error": True,
                             "content": f"{type(error).__name__}: {error}",
                         }
@@ -700,7 +666,10 @@ with the tools: they read the app's database of City of Calgary Open Data (repor
 incidents, closures, travel times, signals, cameras) and its forecasts and SUMO studies. \
 Never invent numbers; if a tool cannot answer, say so. Counts are reported disruptions, \
 not traffic flow, delay or crash risk: pass that caveat on with any count or forecast, \
-and quote the backtest result with any forecast. Resolve place names with \
+and quote forecast_evaluation with any forecast. Its scores belong to the actual forecast \
+model; backtest describes automatic validation selection. If forecast_evaluation is null, \
+state that comparable held-out evidence is unavailable; never substitute another model's \
+scores. Resolve place names with \
 search_intersections or get_prediction_options before using them as keys. When the user \
 wants to see something, or your answer concerns one intersection, area or forecast, call \
 navigate_ui so the app shows it. Keep replies short: two to five sentences, or a short \
