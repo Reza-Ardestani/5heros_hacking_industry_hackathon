@@ -103,4 +103,3 @@ Our main challenges are calibrating the synthetic simulation with measured Calga
 ### 5. Calgary intersections
 
 [![Calgary intersections](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/05-calgary-intersections.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/05-calgary-intersections.jpg)
-
