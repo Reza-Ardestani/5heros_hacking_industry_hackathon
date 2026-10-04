@@ -32,7 +32,8 @@ Calgary traffic disruption data (City of Calgary Open Data, Open Government Lice
 City of Calgary): six months+ of camera-reported incidents, road/lane closures, travel
 times, cameras, signals and 2024 volumes, stored in a database that a collector keeps
 up to date. Typical flow: get_prediction_options -> predict_disruptions; or
-search_intersections -> get_intersection_details. Counts are reported disruptions,
+search_intersections -> get_intersection_details; or, to decide where to look first,
+rank_priorities -> build_intersection_study(study_spot). Counts are reported disruptions,
 not traffic flow, delay or crash risk; always pass the caveat on to users and quote the
 backtest verdict when presenting a prediction."""
 
@@ -135,6 +136,23 @@ def build_server(host="127.0.0.1", port=8000, stateless=False):
             disruptions.predict, quadrant, route, direction, lane, category, intersection,
             horizon_days, save, "mcp", model, lat, lon, radius_m,
         )  # fmt: skip
+
+    @mcp.tool(annotations=READ)
+    async def rank_priorities(
+        level: Literal["corridor", "intersection"] = "corridor",
+        horizon_days: Annotated[int, Field(ge=1, le=28)] = 28,
+        quadrant: Quadrant = "",
+        sort: Literal["expected", "lane_blocking", "rising", "exposure"] = "expected",
+        limit: Annotated[int, Field(ge=1, le=100)] = 10,
+    ) -> dict:
+        """Where to study first: corridors (or intersections) ranked by forecast incidents
+        over the horizon, each with its 80% range, expected lane-blocking incidents,
+        busiest window, recent change vs the city (10% false-discovery rate) and
+        study_spot (busiest hotspot the arterial simulator can represent; pass it to
+        build_intersection_study). analysis.ranking_check says how well the same ranking
+        built 28 days ago matched what happened; corridor rankings are reliable,
+        single-intersection rankings are not, so say which you are presenting."""
+        return await _run(disruptions.priorities, level, horizon_days, quadrant, sort, limit)
 
     @mcp.tool(annotations=READ)
     async def query_incident_history(
@@ -243,6 +261,7 @@ def _check_args(key):
         "search_intersections": {"limit": 3},
         "get_intersection_details": {"key": key},
         "predict_disruptions": {"route": "Stoney Trail", "horizon_days": 7, "save": False},
+        "rank_priorities": {"horizon_days": 28, "limit": 5},
         "query_incident_history": {"limit": 3},
         "get_travel_time_history": {"limit": 3},
         "build_intersection_study": {"key": key},

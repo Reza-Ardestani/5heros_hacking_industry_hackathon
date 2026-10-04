@@ -13,7 +13,7 @@ EXPECTED = {
     "get_intersection_details", "predict_disruptions", "query_incident_history",
     "get_travel_time_history", "get_live_disruptions", "get_data_status", "collect_latest_data",
     "build_intersection_study", "estimate_incident_delay", "list_simulation_runs",
-    "get_simulation_run",
+    "get_simulation_run", "rank_priorities",
 }  # fmt: skip
 
 
@@ -61,6 +61,11 @@ async def test_tools_are_listed_and_callable(seeded_store):
         runs = _payload(await client.call_tool("list_simulation_runs", {}))
         assert isinstance(runs["runs"], list)
 
+        assert tools["rank_priorities"].annotations.readOnlyHint is True
+        ranked = _payload(await client.call_tool("rank_priorities", {"limit": 3}))
+        assert ranked["level"] == "corridor" and len(ranked["items"]) == 3
+        assert ranked["analysis"]["ranking_check"] and "study_spot" in ranked["items"][0]
+
 
 @pytest.fixture
 def anyio_backend():
@@ -79,4 +84,4 @@ async def test_mcp_info_describes_every_tool_and_self_checks_safe_ones(seeded_st
     assert info["summary"]["self_check_errors"] == 0
     statuses = {t["name"]: t["self_check"]["status"] for t in info["tools"]}
     assert all(statuses[n] == "not_run" for n in NOT_SELF_CHECKED)
-    assert sum(s == "ok" for s in statuses.values()) == info["summary"]["self_check_ok"] == 10
+    assert sum(s == "ok" for s in statuses.values()) == info["summary"]["self_check_ok"] == 11
