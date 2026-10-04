@@ -12,9 +12,10 @@
     "8080": { "label": "App: UI + API (password)", "onAutoForward": "notify" },
     "8000": { "label": "MCP server", "onAutoForward": "silent" }
   },
+  // SUMO's binary links libGL and X libraries even when run headless.
   // bb-start lives outside the repo, so it keeps working after switching to a branch
   // that has no .devcontainer folder.
-  "postCreateCommand": "pip install --user --quiet uv && install -D -m 755 .devcontainer/bb-start.sh \"$HOME/.local/bin/bb-start\"",
+  "postCreateCommand": "sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libgl1 libglu1-mesa libxrender1 libxcursor1 libxft2 libxinerama1 libxrandr2 libxi6 libfontconfig1 && pip install --user --quiet uv && install -D -m 755 .devcontainer/bb-start.sh \"$HOME/.local/bin/bb-start\"",
   "postStartCommand": "\"$HOME/.local/bin/bb-start\"",
   "secrets": {
     "BB_AUTH_PASSWORD": {
