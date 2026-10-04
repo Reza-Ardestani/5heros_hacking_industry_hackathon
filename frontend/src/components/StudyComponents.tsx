@@ -7,7 +7,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import type { Alternative, Result, Frame } from "../types";
-import { money, number, names } from "../lib/format";
+import { money, number, optionName } from "../lib/format";
 import { WhyNotLowest } from "./DecisionExplain";
 
 export function Stat({
@@ -59,7 +59,9 @@ export function Decision({
           {improved ? "RECOMMENDED IN THIS EXPERIMENT" : "REFERENCE RETAINED"}
         </div>
         <h3>
-          {improved ? names[recommendation.id] : "Keep the reference plan"}
+          {improved
+            ? optionName(recommendation.id, recommendation.label)
+            : "Keep the reference plan"}
         </h3>
         <p>
           {improved ? (
@@ -318,7 +320,7 @@ export function CostChart({
               fontSize="12"
               fill="#3e575d"
             >
-              {names[a.id]}
+              {optionName(a.id, a.label)}
             </text>
           </g>
         ))}

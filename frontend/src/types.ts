@@ -181,6 +181,44 @@ export type Result = {
     demand_factor: number;
     comparison: { feasible: boolean; delay_reduction_pct: number };
   }[];
+  cost_stress?: CostStress;
+};
+export type CostStress = {
+  recommended_id: string;
+  cost_factors: number[];
+  budget_factors: number[];
+  grid: string[][];
+  robust_share_pct: number;
+  verdict: string;
+  headroom: {
+    cost_increase_pct: number;
+    min_budget_cad: number;
+    fallback_id: string;
+    fallback: string;
+  } | null;
+  switch_points: {
+    id: string;
+    label: string;
+    needed_budget_cad: number;
+    budget_increase_pct: number;
+    cost_cut_pct: number;
+  }[];
+  blocked: { id: string; label: string; reason: string }[];
+  one_at_a_time: {
+    id: string;
+    label: string;
+    factor: number;
+    winner_id: string;
+    winner: string;
+  }[];
+  economics: {
+    net_annual_value_cad: number;
+    worst_case_net_cad: number;
+    worst_case: string;
+    break_even_value_of_time_cad: number;
+    value_of_time_cad: number;
+  } | null;
+  method: string;
 };
 export type Job = {
   id: string;

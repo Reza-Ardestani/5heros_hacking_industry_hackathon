@@ -3335,3 +3335,119 @@ footer span span {
     grid-template-columns: 1fr;
   }
 }
+
+/* Cost & budget stress test (CostStressPanel) */
+.cs .panel-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cs-verdict {
+  margin: 0 22px 14px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.cs-verdict svg {
+  flex: none;
+  margin-top: 1px;
+}
+.cs-verdict.ok {
+  background: #e8f3eb;
+  color: #24725c;
+}
+.cs-verdict.warn {
+  background: #fbf1de;
+  color: #7d5d2c;
+}
+.cs-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 0 22px 12px;
+  align-items: start;
+}
+.cs-grid {
+  display: grid;
+  grid-template-columns: 74px repeat(5, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  font-size: 11px;
+}
+.cs-corner,
+.cs-axis {
+  color: #648783;
+  font-weight: 650;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  text-align: center;
+}
+.cs-corner {
+  justify-content: flex-start;
+  color: #96a8af;
+  font-weight: 500;
+}
+.cs-cell {
+  min-height: 34px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+.cs-cell.same {
+  background: #e8f3eb;
+  color: #24725c;
+}
+.cs-cell.changed {
+  background: #fbf1de;
+  color: #7d5d2c;
+  font-size: 10px;
+}
+.cs-cell.base {
+  outline: 2px solid #16796c;
+  outline-offset: -2px;
+}
+.cs-grid figcaption {
+  grid-column: 1 / -1;
+  color: #96a8af;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.cs-facts {
+  display: grid;
+  gap: 12px;
+}
+.cs-facts strong {
+  display: block;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 22px;
+  color: #102b36;
+}
+.cs-facts span {
+  font-size: 11px;
+  color: #819199;
+  line-height: 1.5;
+}
+.cs-notes {
+  margin: 0 22px 12px;
+  padding-left: 18px;
+  font-size: 11.5px;
+  color: #5d7781;
+  line-height: 1.7;
+}
+@media (max-width: 1150px) {
+  .cs-body {
+    grid-template-columns: 1fr;
+  }
+}

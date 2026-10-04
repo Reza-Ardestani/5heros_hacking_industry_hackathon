@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 import type { Scenario, Incidents, IntersectionStudy, Job, View } from "./types";
-import { kindNote, money, number, names, optionName } from "./lib/format";
+import { kindNote, money, number, optionName } from "./lib/format";
 import { request } from "./lib/api";
 import {
   Stat,
@@ -34,6 +34,7 @@ import {
   CostChart,
 } from "./components/StudyComponents";
 import { IntersectionExplorer } from "./components/IntersectionExplorer";
+import { CostStressPanel } from "./components/CostStressPanel";
 import { SettingsAdvisor, SimulationLog } from "./components/DecisionExplain";
 import {
   EvidenceSummaryPanel,
@@ -723,7 +724,7 @@ export default function App() {
                           <h2>Corridor simulation</h2>
                           <p className="helper">
                             {active
-                              ? names[active.id]
+                              ? optionName(active.id, active.label)
                               : "Your experiment starts here"}
                           </p>
                         </div>
@@ -960,6 +961,7 @@ export default function App() {
                   ))}
                 </div>
                 <EvidenceSummaryPanel result={result} />
+                <CostStressPanel result={result} />
                 <div className="compare-layout">
                   <section className="panel comparison-detail">
                     <div className="panel-heading">
@@ -1101,7 +1103,7 @@ export default function App() {
                             }
                           >
                             <td>
-                              <strong>{names[a.id]}</strong>
+                              <strong>{optionName(a.id, a.label)}</strong>
                               <small>{a.label}</small>
                             </td>
                             <td>{number(a.metrics.mean_delay_s)}s</td>
