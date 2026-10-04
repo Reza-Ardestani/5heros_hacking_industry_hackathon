@@ -19,6 +19,7 @@ class FakeResponse(io.BytesIO):
 
 def test_speech_is_off_without_a_key(monkeypatch):
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.delenv("ELEVEN_LABS_KEY", raising=False)
     client = TestClient(app)
     assert client.get("/api/speech/info").json()["available"] is False
     r = client.post("/api/speech", json={"text": "Hello"})
@@ -61,3 +62,9 @@ def test_speech_endpoint_returns_mp3(monkeypatch):
     r = TestClient(app).post("/api/speech", json={"text": "Top hotspot"})
     assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg"
     assert r.content == b"mp3:Top hotspot"
+
+
+def test_eleven_labs_key_is_accepted_as_an_alternative_name(monkeypatch):
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.setenv("ELEVEN_LABS_KEY", "alt-key")
+    assert elevenlabs.available()

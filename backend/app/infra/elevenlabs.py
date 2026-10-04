@@ -26,8 +26,13 @@ class SpeechFailed(RuntimeError):
     """ElevenLabs rejected the request or could not be reached."""
 
 
+def _key() -> str | None:
+    # ELEVEN_LABS_KEY is accepted too: it is a natural name for the Codespaces secret.
+    return os.environ.get("ELEVENLABS_API_KEY") or os.environ.get("ELEVEN_LABS_KEY")
+
+
 def available() -> bool:
-    return bool(os.environ.get("ELEVENLABS_API_KEY"))
+    return bool(_key())
 
 
 def info() -> dict:
@@ -42,7 +47,7 @@ def info() -> dict:
 
 def synthesize(text: str, opener=urlopen) -> bytes:
     """Return MP3 audio for `text` (trimmed to MAX_CHARS)."""
-    key = os.environ.get("ELEVENLABS_API_KEY")
+    key = _key()
     if not key:
         raise SpeechUnavailable("Set ELEVENLABS_API_KEY on the server to enable speech")
     text = " ".join(text.split())[:MAX_CHARS]
