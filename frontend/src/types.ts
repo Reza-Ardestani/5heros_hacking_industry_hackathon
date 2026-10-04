@@ -379,6 +379,21 @@ export type Prediction = {
     p_at_least_one: number;
     periods: { period: string; expected: number; p_at_least_one: number }[];
   }[];
+  forecast_evaluation?: {
+    model: ForecastModel;
+    label: string;
+    train_days: number;
+    test_days: number;
+    test_start: string;
+    test_end: string;
+    actual_test_incidents: number;
+    model_expected_test_incidents: number;
+    model_daily_mae: number;
+    baseline: string;
+    baseline_daily_mae: number;
+    improvement_vs_baseline_pct: number | null;
+    interval_80_coverage_pct: number;
+  } | null;
   backtest: {
     train_days: number;
     test_days: number;

@@ -5,8 +5,9 @@ import {
   Info,
   FlaskConical,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
-import type { Alternative, Result, Frame } from "../types";
+import type { Alternative, Result, Frame, Job } from "../types";
 import { money, number, optionName } from "../lib/format";
 import { WhyNotLowest } from "./DecisionExplain";
 
@@ -90,6 +91,65 @@ export function Decision({
     </section>
   );
 }
+export function JobStatus({
+  job,
+  submitting,
+  pollError,
+  onStudy,
+}: {
+  job: Job | null;
+  submitting: boolean;
+  pollError: string;
+  onStudy: () => void;
+}) {
+  const failed = !submitting && job?.status === "failed";
+  const latest = job?.trace.at(-1);
+  return (
+    <section
+      className="panel running-panel"
+      role={failed ? "alert" : "status"}
+      aria-live="polite"
+    >
+      {failed ? <Info size={24} /> : <Loader2 className="spinner" size={24} />}
+      <div>
+        <h3>
+          {submitting
+            ? "Submitting experiment"
+            : failed
+              ? "Simulation failed"
+              : "Simulation running"}
+        </h3>
+        <p>
+          {submitting
+            ? "Waiting for the simulator to accept this study."
+            : failed
+              ? (job?.error ?? "The simulator could not complete this study.")
+              : latest
+                ? `${latest.agent}: ${latest.detail}`
+                : "Preparing paired traffic inputs."}
+        </p>
+        {!submitting && !failed && (
+          <span>
+            {job?.trace.length ?? 0} recorded actions · results appear after
+            evaluation
+          </span>
+        )}
+        {!submitting && !failed && pollError && (
+          <p role="alert">
+            Updates interrupted: {pollError} Retrying automatically; the last
+            known simulation status is running.
+          </p>
+        )}
+        {failed && (
+          <button className="button secondary" onClick={onStudy}>
+            Review inputs and retry
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function EmptyState({ onStudy }: { onStudy: () => void }) {
   return (
     <section className="panel empty-state">

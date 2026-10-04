@@ -67,6 +67,24 @@ async def test_tools_are_listed_and_callable(seeded_store):
         assert ranked["analysis"]["ranking_check"] and "study_spot" in ranked["items"][0]
 
 
+@pytest.mark.anyio
+async def test_agent_initialization_and_forced_forecast_use_actual_model_evidence():
+    server = build_server()._mcp_server
+    async with create_connected_server_and_client_session(server) as client:
+        initialized = await client.initialize()
+        assert "quote forecast_evaluation for the actual forecast model" in initialized.instructions
+        prediction = _payload(
+            await client.call_tool("predict_disruptions", {"model": "flat", "save": False})
+        )
+        evaluation = prediction["forecast_evaluation"]
+        assert prediction["model"]["name"] == evaluation["model"] == "flat"
+        assert evaluation["improvement_vs_baseline_pct"] == 0
+        assert (
+            evaluation["model_daily_mae"]
+            == prediction["backtest"]["models"]["flat"]["test_daily_mae"]
+        )
+
+
 @pytest.fixture
 def anyio_backend():
     return "asyncio"

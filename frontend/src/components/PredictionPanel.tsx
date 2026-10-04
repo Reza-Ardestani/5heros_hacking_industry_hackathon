@@ -123,6 +123,7 @@ export function PredictionPanel({
   }, [key]);
 
   const bt = result?.backtest;
+  const evaluation = result?.forecast_evaluation;
   return (
     <section className="panel px">
       <div className="panel-heading">
@@ -319,88 +320,117 @@ export function PredictionPanel({
               {result.model && (
                 <p className="px-model">
                   Forecast by <strong>{result.model.label}</strong>
-                  {result.model.requested === "auto" ? " · chosen on validation days" : " · forced"}
+                  {result.model.note
+                    ? " · fallback"
+                    : result.model.requested === "auto"
+                      ? " · chosen on validation days"
+                      : " · manually selected"}
                   {result.model.note ? ` · ${result.model.note}` : ""}
                 </p>
               )}
               {bt?.models && (
-                <table className="px-models">
-                  <thead>
-                    <tr>
-                      <th>Model</th>
-                      <th>Validation MAE</th>
-                      <th>Test MAE</th>
-                      <th>80% hit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(bt.models).map(([name, m]) => (
-                      <tr key={name} className={name === bt.selected_model ? "selected" : ""}>
-                        <td>
-                          {m.label}
-                          {name === bt.selected_model ? " ✓" : ""}
-                        </td>
-                        <td>{m.validation_daily_mae}</td>
-                        <td>{m.test_daily_mae}</td>
-                        <td>{m.test_interval_80_coverage_pct}%</td>
+                <>
+                  <p className="helper">
+                    Automatic choice: {bt.selected_label ?? bt.selected_model}{" "}
+                    (✓). Current forecast: {result.model?.label}.{" "}
+                    {bt.selection_rule}
+                  </p>
+                  <table className="px-models">
+                    <thead>
+                      <tr>
+                        <th>Model</th>
+                        <th>Validation MAE</th>
+                        <th>Test MAE</th>
+                        <th>80% hit</th>
                       </tr>
-                    ))}
-                    {(bt.not_eligible ?? []).map((n) => (
-                      <tr key={n} className="muted-row">
-                        <td>{n === "lightgbm" ? "LightGBM" : n}</td>
-                        <td colSpan={3}>Too few incidents in this selection to train</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {Object.entries(bt.models).map(([name, m]) => (
+                        <tr
+                          key={name}
+                          className={
+                            name === bt.selected_model ? "selected" : ""
+                          }
+                        >
+                          <td>
+                            {m.label}
+                            {name === bt.selected_model ? " ✓" : ""}
+                          </td>
+                          <td>{m.validation_daily_mae}</td>
+                          <td>{m.test_daily_mae}</td>
+                          <td>{m.test_interval_80_coverage_pct}%</td>
+                        </tr>
+                      ))}
+                      {(bt.not_eligible ?? []).map((n) => (
+                        <tr key={n} className="muted-row">
+                          <td>{n === "lightgbm" ? "LightGBM" : n}</td>
+                          <td colSpan={3}>
+                            Not eligible on backtest training folds
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
-              {bt ? (
+              {evaluation ? (
                 <table className="px-backtest">
                   <tbody>
                     <tr>
                       <td>Held-out test</td>
                       <td>
-                        {bt.test_start} → {bt.test_end} ({bt.test_days} days, trained on{" "}
-                        {bt.train_days})
+                        {evaluation.test_start} → {evaluation.test_end} (
+                        {evaluation.test_days} days, trained on{" "}
+                        {evaluation.train_days})
                       </td>
                     </tr>
                     <tr>
                       <td>Actual vs expected</td>
                       <td>
-                        {bt.actual_test_incidents} actual · {bt.model_expected_test_incidents}{" "}
-                        expected
+                        {evaluation.actual_test_incidents} actual ·{" "}
+                        {evaluation.model_expected_test_incidents} expected
                       </td>
                     </tr>
                     <tr>
-                      <td>Daily error, {bt.selected_model ?? "model"}</td>
-                      <td>{bt.model_daily_mae} incidents/day (MAE)</td>
+                      <td>Daily error, {evaluation.label}</td>
+                      <td>{evaluation.model_daily_mae} incidents/day (MAE)</td>
                     </tr>
                     <tr>
                       <td>Daily error, baseline</td>
                       <td>
-                        {bt.baseline_daily_mae} — {bt.baseline}
+                        {evaluation.baseline_daily_mae} — {evaluation.baseline}
                       </td>
                     </tr>
                     <tr>
-                      <td>Verdict</td>
+                      <td>Verdict, {evaluation.label}</td>
                       <td>
                         <strong>
-                          {bt.improvement_vs_baseline_pct == null
-                            ? "Not comparable"
-                            : bt.improvement_vs_baseline_pct >= 2
-                              ? `${bt.improvement_vs_baseline_pct}% lower error than baseline`
-                              : "No better than the flat average for this slice"}
+                          {evaluation.improvement_vs_baseline_pct == null
+                            ? "Not comparable: baseline has zero error"
+                            : evaluation.improvement_vs_baseline_pct > 0
+                              ? `${evaluation.improvement_vs_baseline_pct}% lower error than baseline`
+                              : evaluation.improvement_vs_baseline_pct < 0
+                                ? `${Math.abs(evaluation.improvement_vs_baseline_pct)}% higher error than baseline`
+                                : "Same error as the flat baseline"}
                         </strong>
                       </td>
                     </tr>
                     <tr>
                       <td>80% range hit rate</td>
-                      <td>{bt.interval_80_coverage_pct}% of test days</td>
+                      <td>
+                        {evaluation.interval_80_coverage_pct}% of test days
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               ) : (
-                <p className="empty-inline">Not enough history to backtest.</p>
+                <p className="empty-inline">
+                  No comparable held-out evaluation for{" "}
+                  {result.model?.label ?? "this forecast"}.
+                  {bt
+                    ? " Comparable scores are unavailable under the backtest protocol."
+                    : " Not enough history to backtest."}
+                </p>
               )}
               <h3>Likely incident types</h3>
               <ul className="px-mix">

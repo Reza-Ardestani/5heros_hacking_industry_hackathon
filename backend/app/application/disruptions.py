@@ -398,6 +398,7 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
         **result,
         "periods": [p[0] for p in model.PERIODS],
         "backtest": backtest,
+        "forecast_evaluation": model.forecast_evaluation(backtest, result["model"]["name"]),
         "top_intersections": [
             {"key": k, "incidents": v, "expected_in_horizon": round(v / n_days * horizon_days, 2)}
             for k, v in spots.most_common(8)

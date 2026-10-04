@@ -22,5 +22,6 @@ following RCX catalog's artifact separation; no RCX product IDs/policies copied.
 | D-BB-SEQ-001 | Diagram | [run sequence](diagrams/run_sequence.md) |
 | S-BB-1 | Spec | [requirements](../specs/features/phase-1-hackathon-mvp/requirements.md) |
 | S-BB-2 | Spec | [requirements](../specs/features/phase-2-disruption-context/requirements.md) |
+| S-BB-FIX-1 | Scoped correction spec | [Forecast evidence and job status](../specs/features/fix-forecast-evidence-and-job-status/requirements.md) |
 | DES-BB-RESOURCE-001 | Proposed design | [Resource feasibility](design/resource-evidence/design.md) |
 | S-BB-RESOURCE-1 | Draft spec | [Resource evidence](../specs/features/phase-4-resource-evidence/requirements.md) |

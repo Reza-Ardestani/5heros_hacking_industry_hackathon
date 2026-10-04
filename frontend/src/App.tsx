@@ -39,6 +39,7 @@ import {
   Stat,
   Decision,
   EmptyState,
+  JobStatus,
   Network,
   CostChart,
 } from "./components/StudyComponents";
@@ -80,6 +81,8 @@ export default function App() {
   const [view, setView] = useState<View>("problem"),
     [step, setStep] = useState(1),
     [error, setError] = useState(""),
+    [submitting, setSubmitting] = useState(false),
+    [pollError, setPollError] = useState(""),
     [selected, setSelected] = useState("reference"),
     [frame, setFrame] = useState(0),
     [playing, setPlaying] = useState(false),
@@ -90,7 +93,7 @@ export default function App() {
       (a) => a.id === result.recommended_id,
     ),
     active = result?.alternatives.find((a) => a.id === selected);
-  const busy = job?.status === "running",
+  const busy = submitting || job?.status === "running",
     frames = active?.tuning_trial.playback ?? [],
     current = frames[Math.min(frame, Math.max(0, frames.length - 1))];
   const go = (next: number) => {
@@ -146,6 +149,7 @@ export default function App() {
       try {
         const next = await request<Job>(`/api/jobs/${job.id}`);
         if (stopped) return;
+        setPollError("");
         setJob(next);
         if (next.status === "completed") {
           setSelected(next.result?.recommended_id ?? "reference");
@@ -153,11 +157,9 @@ export default function App() {
           setPlaying(false);
         }
         if (next.status === "running") timer = setTimeout(poll, 900);
-        if (next.status === "failed")
-          setError(next.error ?? "Simulation failed");
       } catch (e) {
         if (!stopped) {
-          setError((e as Error).message);
+          setPollError((e as Error).message);
           timer = setTimeout(poll, 2000);
         }
       }
@@ -179,8 +181,12 @@ export default function App() {
   const change = (key: keyof Scenario, value: number) =>
     setScenario((s) => ({ ...s, [key]: value }));
   async function start() {
+    if (busy) return;
     setError("");
+    setPollError("");
+    setSubmitting(true);
     setPlaying(false);
+    go(3);
     try {
       const query = study
         ? `?origin=intersection&intersection_key=${encodeURIComponent(study.intersection_key)}`
@@ -198,9 +204,10 @@ export default function App() {
         error: null,
       });
       setSelected("reference");
-      go(3);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setSubmitting(false);
     }
   }
   async function importProfile(file: File | undefined) {
@@ -250,12 +257,12 @@ export default function App() {
   }
   const exportLink = (
     <a
-      className={`button secondary ${!result ? "disabled" : ""}`}
-      aria-disabled={!result}
-      href={result ? `/api/jobs/${job!.id}/report` : "#"}
+      className={`button secondary ${!result || busy ? "disabled" : ""}`}
+      aria-disabled={!result || busy}
+      href={result && !busy ? `/api/jobs/${job!.id}/report` : "#"}
       download
       onClick={(e) => {
-        if (!result) e.preventDefault();
+        if (!result || busy) e.preventDefault();
       }}
     >
       <Download size={16} />
@@ -759,7 +766,9 @@ export default function App() {
                             ? "RUNNING"
                             : result
                               ? "COMPLETED"
-                              : "READY TO RUN"}
+                              : job?.status === "failed"
+                                ? "FAILED"
+                                : "READY TO RUN"}
                         </span>
                       </div>
                       <div
@@ -841,23 +850,13 @@ export default function App() {
                       </div>
                     </section>
                   )}
-                  {busy ? (
-                    <section className="panel running-panel">
-                      <Loader2 className="spinner" size={24} />
-                      <div>
-                        <h3>
-                          {job?.trace.at(-1)?.agent ?? "Preparing experiment"}
-                        </h3>
-                        <p>
-                          {job?.trace.at(-1)?.detail ??
-                            "The simulator is preparing paired traffic inputs."}
-                        </p>
-                        <span>
-                          {job?.trace.length ?? 0} recorded actions · results
-                          appear after evaluation
-                        </span>
-                      </div>
-                    </section>
+                  {busy || job?.status === "failed" ? (
+                    <JobStatus
+                      job={job ?? null}
+                      submitting={submitting}
+                      pollError={pollError}
+                      onStudy={() => go(2)}
+                    />
                   ) : recommendation && reference ? (
                     <>
                       <Decision
@@ -927,7 +926,14 @@ export default function App() {
             </>
           )}
           {view === "compare" &&
-            (result && recommendation && reference ? (
+            (busy || job?.status === "failed" ? (
+              <JobStatus
+                job={job ?? null}
+                submitting={submitting}
+                pollError={pollError}
+                onStudy={() => go(2)}
+              />
+            ) : result && recommendation && reference ? (
               <>
                 <Decision
                   result={result}

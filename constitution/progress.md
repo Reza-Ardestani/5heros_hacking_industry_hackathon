@@ -1,5 +1,10 @@
 # Progress
 
+October 3 (scoped corrections): actual-model forecast evidence and shared simulation
+status implemented on `codex/fix-forecast-and-job-status`; three independent reviews
+completed, 68 backend tests, 10 UI tests and local browser flow passed.
+[Details and limits](../specs/features/fix-forecast-evidence-and-job-status/progress.md).
+
 October 3 (design/product docs): shared React design tokens and gallery verified;
 root [UJ_US](../UJ_US/README.md) now holds three journeys, profiles and 18 foldered
 stories. Resource eligibility is a draft, not a new integration. Editable PowerPoint

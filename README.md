@@ -71,6 +71,7 @@ This local server has no authentication; the deployed container adds a shared pa
 
 ```sh
 make test
+cd frontend && npm test && cd ..  # React forecast evidence and job lifecycle regressions
 make build
 # Stop API before refreshing the two-file source snapshot.
 make refresh

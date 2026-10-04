@@ -34,8 +34,10 @@ times, cameras, signals and 2024 volumes, stored in a database that a collector 
 up to date. Typical flow: get_prediction_options -> predict_disruptions; or
 search_intersections -> get_intersection_details; or, to decide where to look first,
 rank_priorities -> build_intersection_study(study_spot). Counts are reported disruptions,
-not traffic flow, delay or crash risk; always pass the caveat on to users and quote the
-backtest verdict when presenting a prediction."""
+not traffic flow, delay or crash risk; always pass the caveat on to users. When presenting
+a prediction, quote forecast_evaluation for the actual forecast model. If it is null,
+state that comparable held-out evidence is unavailable. backtest describes automatic
+validation selection; never substitute its winner's scores for another model's verdict."""
 
 READ = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
 READ_LIVE = ToolAnnotations(readOnlyHint=False, idempotentHint=True, openWorldHint=True)
@@ -130,7 +132,9 @@ def build_server(host="127.0.0.1", port=8000, stateless=False):
     ) -> dict:
         """Forecast reported incidents for a selection over the next 1-28 days: expected
         count, 80% range, per-day x period probabilities, likely types/locations, and a
-        28-day backtest against a flat-average baseline (report its verdict). model="auto"
+        nullable forecast_evaluation against a flat-average baseline for the actual model
+        (report its verdict, or state evidence is unavailable). backtest describes automatic
+        validation selection; never attribute its winner's scores to a different model. model="auto"
         uses whichever of flat / empirical-Bayes / LightGBM won on validation days."""
         return await _run(
             disruptions.predict, quadrant, route, direction, lane, category, intersection,

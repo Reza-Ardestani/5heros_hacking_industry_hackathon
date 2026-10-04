@@ -350,6 +350,33 @@ def select_and_backtest(times, days, city_times, test_days=TEST_DAYS):
     }
 
 
+def forecast_evaluation(backtest, model_name):
+    """Project held-out evidence for the actual forecast, not the automatic winner."""
+    scores = (backtest or {}).get("models", {}).get(model_name)
+    if scores is None:
+        return None
+    baseline_mae = backtest["baseline_daily_mae"]
+    return {
+        "model": model_name,
+        "label": scores["label"],
+        **{
+            k: backtest[k]
+            for k in (
+                "train_days", "test_days", "test_start", "test_end", "actual_test_incidents",
+                "baseline", "baseline_daily_mae",
+            )
+        },
+        "model_expected_test_incidents": scores["test_expected"],
+        "model_daily_mae": scores["test_daily_mae"],
+        "interval_80_coverage_pct": scores["test_interval_80_coverage_pct"],
+        "improvement_vs_baseline_pct": round(
+            100 * (1 - scores["test_daily_mae"] / baseline_mae), 1
+        )
+        if baseline_mae
+        else None,
+    }
+
+
 def backtest(times, days, city_times, test_days=TEST_DAYS, prior_weeks=PRIOR_WEEKS):
     """Bayes-only backtest against the flat baseline (kept for compatibility/tests)."""
     ordered = sorted(days)
