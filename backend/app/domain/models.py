@@ -14,6 +14,20 @@ class FlowInterval(BaseModel):
     cross_vph: float = Field(ge=0, le=600)
 
 
+ExtraOption = Literal["signal_control", "incident_clearance", "turn_lane", "turn_ban"]
+
+
+class IncidentSpec(BaseModel):
+    """A lane-blocking incident at the hotspot junction (J2), modeled as stopped vehicles."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    direction: Literal["east", "west"] = "east"
+    start_s: int = Field(default=300, ge=0, le=1800)
+    duration_s: int = Field(default=1200, ge=60, le=3600)
+    lanes_blocked: int = Field(default=1, ge=1, le=3)
+    label: str = Field(default="Lane-blocking incident (assumed)", max_length=200)
+
+
 class Scenario(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     main_vph: float = Field(default=1050, ge=50, le=1800)
@@ -34,9 +48,30 @@ class Scenario(BaseModel):
         default="Synthetic directional arrivals; not CalTRACS", max_length=500
     )
     flow_profile: list[FlowInterval] | None = Field(default=None, max_length=12)
+    # Sprint 2-3 study features. Defaults reproduce the original four-option study.
+    arterial_lanes: int = Field(default=1, ge=1, le=3)
+    junction_control: Literal["signal", "priority"] = "signal"
+    turn_share: float = Field(default=0, ge=0, le=0.4)
+    incident: IncidentSpec | None = None
+    extra_options: list[ExtraOption] = Field(default_factory=list, max_length=4)
+    clearance_reduction: float = Field(default=0.5, ge=0.1, le=0.9)
+    # Share of study windows an incident is active (from six months of City data for an
+    # intersection study); 1 = evaluate incident conditions only.
+    incident_weight: float = Field(default=1.0, ge=0, le=1)
+    signal_install_cost_cad: float = Field(default=250000, ge=0, le=10000000)
+    signal_removal_cost_cad: float = Field(default=30000, ge=0, le=10000000)
+    clearance_program_cost_cad: float = Field(default=50000, ge=0, le=10000000)
+    turn_lane_cost_cad: float = Field(default=400000, ge=0, le=10000000)
+    turn_ban_cost_cad: float = Field(default=10000, ge=0, le=10000000)
 
     @model_validator(mode="after")
     def validate_profile(self):
+        if self.incident and self.incident.lanes_blocked > self.arterial_lanes:
+            raise ValueError("Incident cannot block more lanes than the arterial has")
+        if {"turn_lane", "turn_ban"} & set(self.extra_options) and self.turn_share == 0:
+            raise ValueError("Turn lane/ban options need a left-turn share above zero")
+        if "incident_clearance" in self.extra_options and not self.incident:
+            raise ValueError("Faster incident clearance needs an incident to clear")
         if self.demand_kind == "measured" and (
             not self.flow_profile or not self.demand_source.strip()
         ):
@@ -79,6 +114,12 @@ class Intervention:
     main_green_share: float
     main_lanes: int
     capital_cost_cad: float
+    # Hotspot junction (J2) changes; defaults keep the original corridor.
+    control: Literal["signal", "priority"] | None = None  # None = scenario's junction_control
+    incident_duration_factor: float = 1.0
+    turn_lane: bool = False
+    turn_ban: bool = False
+    kind: str = "retiming"
 
 
 def bounded_share(share: float) -> float:

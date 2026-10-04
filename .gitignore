@@ -12,3 +12,4 @@ output/
 data/raw/
 data/runs/
 organizer_docs/discord/*.txt
+data/db/

@@ -23,3 +23,8 @@ Busters early implementation contract. Product/technical decisions and traceabil
 were settled under the user's October 3 build authorization. External organizer
 acceptance and measured Calgary calibration remain separate open gates. See its
 progress file for actual validation and delivery state.
+
+[Phase 2](features/phase-2-disruption-context/requirements.md) adds the six-month
+Calgary disruption dataset, intersection explorer and area/route/lane prediction.
+[Phase 3](features/phase-3-intersection-studies/requirements.md) adds explainable
+decisions, simulation logging, incident-aware intersection studies and new interventions.

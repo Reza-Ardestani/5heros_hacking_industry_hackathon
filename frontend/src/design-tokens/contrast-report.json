@@ -1,0 +1,149 @@
+[
+  {
+    "label": "Body",
+    "foreground": "ink",
+    "background": "surface",
+    "ratio": 11.82,
+    "minimum": 4.5
+  },
+  {
+    "label": "Muted",
+    "foreground": "muted",
+    "background": "surface",
+    "ratio": 5.65,
+    "minimum": 4.5
+  },
+  {
+    "label": "Canvas body",
+    "foreground": "ink",
+    "background": "canvas",
+    "ratio": 11,
+    "minimum": 4.5
+  },
+  {
+    "label": "Canvas muted",
+    "foreground": "muted",
+    "background": "canvas",
+    "ratio": 5.26,
+    "minimum": 4.5
+  },
+  {
+    "label": "Navigation",
+    "foreground": "navText",
+    "background": "nav",
+    "ratio": 8.31,
+    "minimum": 4.5
+  },
+  {
+    "label": "Primary action",
+    "foreground": "onBrand",
+    "background": "brand",
+    "ratio": 5.46,
+    "minimum": 4.5
+  },
+  {
+    "label": "Primary hover",
+    "foreground": "onBrand",
+    "background": "brandHover",
+    "ratio": 7.51,
+    "minimum": 4.5
+  },
+  {
+    "label": "Observed",
+    "foreground": "observed",
+    "background": "observedSurface",
+    "ratio": 5.9,
+    "minimum": 4.5
+  },
+  {
+    "label": "Modeled",
+    "foreground": "modeled",
+    "background": "modeledSurface",
+    "ratio": 5.87,
+    "minimum": 4.5
+  },
+  {
+    "label": "Assumed",
+    "foreground": "assumed",
+    "background": "assumedSurface",
+    "ratio": 5.93,
+    "minimum": 4.5
+  },
+  {
+    "label": "Missing",
+    "foreground": "missing",
+    "background": "missingSurface",
+    "ratio": 6.1,
+    "minimum": 4.5
+  },
+  {
+    "label": "Neutral",
+    "foreground": "neutral",
+    "background": "neutralSurface",
+    "ratio": 5.06,
+    "minimum": 4.5
+  },
+  {
+    "label": "Focus on white",
+    "foreground": "focus",
+    "background": "surface",
+    "ratio": 5.27,
+    "minimum": 3
+  },
+  {
+    "label": "Focus on canvas",
+    "foreground": "focus",
+    "background": "canvas",
+    "ratio": 4.9,
+    "minimum": 3
+  },
+  {
+    "label": "Control border",
+    "foreground": "borderStrong",
+    "background": "surface",
+    "ratio": 3.8,
+    "minimum": 3
+  },
+  {
+    "label": "Sidebar focus",
+    "foreground": "onBrand",
+    "background": "nav",
+    "ratio": 14.78,
+    "minimum": 3
+  },
+  {
+    "label": "Sidebar selected focus",
+    "foreground": "onBrand",
+    "background": "navActive",
+    "ratio": 10.01,
+    "minimum": 3
+  },
+  {
+    "label": "chartBaseline",
+    "foreground": "chartBaseline",
+    "background": "surface",
+    "ratio": 5.62,
+    "minimum": 3
+  },
+  {
+    "label": "chartCandidate",
+    "foreground": "chartCandidate",
+    "background": "surface",
+    "ratio": 5.46,
+    "minimum": 3
+  },
+  {
+    "label": "chartRevision",
+    "foreground": "chartRevision",
+    "background": "surface",
+    "ratio": 6.69,
+    "minimum": 3
+  },
+  {
+    "label": "chartCapacity",
+    "foreground": "chartCapacity",
+    "background": "surface",
+    "ratio": 6.26,
+    "minimum": 3
+  }
+]

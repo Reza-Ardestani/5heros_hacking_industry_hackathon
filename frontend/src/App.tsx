@@ -18,12 +18,13 @@ import {
   Route,
   Settings2,
   ShieldCheck,
+  TrafficCone,
   Wallet,
   X,
 } from "lucide-react";
 
-import type { Scenario, Incidents, Job, View } from "./types";
-import { money, number, names } from "./lib/format";
+import type { Scenario, Incidents, IntersectionStudy, Job, View } from "./types";
+import { kindNote, money, number, names, optionName } from "./lib/format";
 import { request } from "./lib/api";
 import {
   Stat,
@@ -32,6 +33,15 @@ import {
   Network,
   CostChart,
 } from "./components/StudyComponents";
+import { IntersectionExplorer } from "./components/IntersectionExplorer";
+import { SettingsAdvisor, SimulationLog } from "./components/DecisionExplain";
+import {
+  EvidenceSummaryPanel,
+  StudyBanner,
+  StudyDesign,
+  TestPlan,
+  defaultStudyFields,
+} from "./components/StudyDesign";
 
 const defaults: Scenario = {
   main_vph: 1050,
@@ -50,10 +60,12 @@ const defaults: Scenario = {
   demand_kind: "synthetic",
   demand_source: "Synthetic directional arrivals; not CalTRACS",
   flow_profile: null,
+  ...defaultStudyFields,
 };
 export default function App() {
   const [scenario, setScenario] = useState<Scenario>(defaults),
     [incidents, setIncidents] = useState<Incidents | null>(null),
+    [study, setStudy] = useState<IntersectionStudy | null>(null),
     [job, setJob] = useState<Job | null>(null);
   const [view, setView] = useState<View>("problem"),
     [step, setStep] = useState(1),
@@ -137,7 +149,10 @@ export default function App() {
     setError("");
     setPlaying(false);
     try {
-      const next = await request<{ id: string }>("/api/jobs", {
+      const query = study
+        ? `?origin=intersection&intersection_key=${encodeURIComponent(study.intersection_key)}`
+        : "";
+      const next = await request<{ id: string }>(`/api/jobs${query}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(scenario),
@@ -240,7 +255,8 @@ export default function App() {
             [
               ["problem", FlaskConical, "Guided study", "01"],
               ["compare", GitBranch, "Compare options", "02"],
-              ["evidence", FileText, "Evidence & sources", "03"],
+              ["intersections", TrafficCone, "Intersections", "03"],
+              ["evidence", FileText, "Evidence & sources", "04"],
             ] as const
           ).map(([id, Icon, label, index]) => (
             <button
@@ -276,7 +292,11 @@ export default function App() {
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />{" "}
             <strong>
-              {view === "evidence" ? "Evidence & sources" : `Step ${step} of 4`}
+              {view === "evidence"
+                ? "Evidence & sources"
+                : view === "intersections"
+                  ? "Intersection explorer"
+                  : `Step ${step} of 4`}
             </strong>
           </div>
           <div className="topbar-meta">
@@ -285,7 +305,7 @@ export default function App() {
           </div>
         </header>
         <div className="page-body">
-          {view !== "evidence" && (
+          {view !== "evidence" && view !== "intersections" && (
             <div className="wizard-progress" aria-label="Study progress">
               {[
                 "Frame the problem",
@@ -320,7 +340,9 @@ export default function App() {
                       : "Let the evidence decide."
                     : view === "compare"
                       ? "A recommendation you can inspect."
-                      : "Show your working."}
+                      : view === "intersections"
+                        ? "Where does traffic keep getting stuck?"
+                        : "Show your working."}
               </h1>
               <p>
                 {view === "problem"
@@ -331,7 +353,9 @@ export default function App() {
                       : "Watch agents test, reject, revise and evaluate traffic interventions."
                     : view === "compare"
                       ? "Compare the whole corridor, the tradeoffs and the investment required."
-                      : "Trace each decision back to inputs, assumptions and actual simulator output."}
+                      : view === "intersections"
+                        ? "Six months of City-reported incidents and closures by intersection, with the live City feed and cameras. Use it to choose which corridor to study."
+                        : "Trace each decision back to inputs, assumptions and actual simulator output."}
               </p>
             </div>
             <div className="heading-actions">
@@ -361,6 +385,15 @@ export default function App() {
                 again to update the comparison.
               </span>
             </div>
+          )}
+          {view === "intersections" && (
+            <IntersectionExplorer
+              onStudy={(built: IntersectionStudy) => {
+                setStudy(built);
+                setScenario(built.scenario);
+                go(2);
+              }}
+            />
           )}
           {view === "problem" && (
             <>
@@ -492,6 +525,15 @@ export default function App() {
                   Check data readiness <ArrowUpRight size={14} />
                 </button>
               </div>
+              {study && (
+                <StudyBanner
+                  study={study}
+                  onClear={() => {
+                    setStudy(null);
+                    setScenario(defaults);
+                  }}
+                />
+              )}
               <div className="study-layout">
                 <section className="panel setup">
                   <div className="panel-heading">
@@ -587,6 +629,11 @@ export default function App() {
                   <p className="helper guardrail-help">
                     Plans exceeding this limit are rejected.
                   </p>
+                  <StudyDesign
+                    scenario={scenario}
+                    disabled={busy}
+                    onChange={(patch) => setScenario((s) => ({ ...s, ...patch }))}
+                  />
                   <button
                     className="disclosure"
                     aria-expanded={advanced}
@@ -612,6 +659,11 @@ export default function App() {
                           ["value_of_time_cad", "CAD per person-hour"],
                           ["operating_days", "Study days per year"],
                           ["asset_life_years", "Asset life · years"],
+                          ["signal_install_cost_cad", "Add signal · CAD"],
+                          ["signal_removal_cost_cad", "Remove signal · CAD"],
+                          ["clearance_program_cost_cad", "Clearance program · CAD"],
+                          ["turn_lane_cost_cad", "Left-turn bay · CAD"],
+                          ["turn_ban_cost_cad", "Turn ban · CAD"],
                           ["seed", "Proposal seed"],
                           ["duration_s", "Arrival window · seconds"],
                         ] as [keyof Scenario, string][]
@@ -647,44 +699,23 @@ export default function App() {
                     )}
                   </button>
                   <div className="run-note">
-                    4 options · 3 evaluation seeds · 2 stress checks
+                    {4 + scenario.extra_options.length} options · 3 evaluation seeds
+                    {scenario.incident && scenario.incident_weight < 1
+                      ? " × 2 conditions"
+                      : ""}{" "}
+                    · 2 stress checks
                   </div>
                 </section>
                 <div className="experiment-column">
                   {step === 2 && (
-                    <section className="panel intervention-menu">
-                      <div className="panel-heading">
-                        <h2>What the agents will test</h2>
-                        <span className="badge neutral">BOUNDED ACTIONS</span>
-                      </div>
-                      {[
-                        [
-                          "Equal-green reference",
-                          "Keep equal green. Establish the reference.",
-                          0,
-                        ],
-                        [
-                          "Signal retiming",
-                          "Shift arterial green, then revise if cross-street harm is too high.",
-                          scenario.retiming_cost_cad,
-                        ],
-                        [
-                          "Extra arterial lane",
-                          "Test capacity against the same demand. Construction feasibility remains open.",
-                          scenario.widening_cost_cad,
-                        ],
-                      ].map(([label, description, cost], i) => (
-                        <div className="intervention-row" key={label}>
-                          <span>{String(i + 1).padStart(2, "0")}</span>
-                          <div>
-                            <strong>{label}</strong>
-                            <p>{description}</p>
-                          </div>
-                          <small>{money(cost as number)}</small>
-                        </div>
-                      ))}
-                    </section>
+                    <SettingsAdvisor
+                      scenario={scenario}
+                      result={result}
+                      onApply={change}
+                      disabled={busy}
+                    />
                   )}
+                  {step === 2 && <TestPlan scenario={scenario} />}
                   {step === 3 && (
                     <section className="panel network-panel">
                       <div className="panel-heading">
@@ -708,7 +739,14 @@ export default function App() {
                         className="scenario-tabs"
                         aria-label="Playback alternative"
                       >
-                        {["reference", "candidate", "revised", "capacity"].map(
+                        {(
+                          result?.alternatives.map((a) => a.id) ?? [
+                            "reference",
+                            "candidate",
+                            "revised",
+                            "capacity",
+                          ]
+                        ).map(
                           (id) => (
                             <button
                               key={id}
@@ -720,7 +758,10 @@ export default function App() {
                                 setPlaying(false);
                               }}
                             >
-                              {names[id]}
+                              {optionName(
+                                id,
+                                result?.alternatives.find((a) => a.id === id)?.label,
+                              )}
                               {result?.recommended_id === id && (
                                 <Check size={14} />
                               )}
@@ -818,6 +859,8 @@ export default function App() {
                           note={`Limit ${result!.scenario.cross_guardrail_pct}% increase`}
                         />
                       </div>
+                      {step === 3 && result && <EvidenceSummaryPanel result={result} />}
+                      {step === 3 && job && <SimulationLog job={job} />}
                     </>
                   ) : (
                     <section className="panel start-guide">
@@ -872,15 +915,22 @@ export default function App() {
                       onClick={() => setSelected(a.id)}
                     >
                       <div>
-                        <span className="option-title">{names[a.id]}</span>
-                        <span
-                          className={`badge ${a.id === recommendation.id ? "green" : a.comparison.feasible ? "neutral" : "amber"}`}
-                        >
-                          {a.id === recommendation.id
-                            ? "RECOMMENDED"
-                            : a.comparison.feasible
-                              ? "FEASIBLE"
-                              : "REJECTED"}
+                        <span className="option-title">
+                          {optionName(a.id, a.label)}
+                        </span>
+                        <span className="option-badges">
+                          <span
+                            className={`badge ${a.id === recommendation.id ? "green" : a.comparison.feasible ? "neutral" : "amber"}`}
+                          >
+                            {a.id === recommendation.id
+                              ? "RECOMMENDED"
+                              : a.comparison.feasible
+                                ? "FEASIBLE"
+                                : "REJECTED"}
+                          </span>
+                          {result.decision?.lowest_delay_id === a.id && (
+                            <span className="badge blue">LOWEST DELAY</span>
+                          )}
                         </span>
                       </div>
                       <strong>
@@ -892,19 +942,30 @@ export default function App() {
                       </span>
                       <p>
                         {a.id === "reference"
-                          ? "50/50 equal-green reference"
+                          ? a.label
                           : a.id === "capacity"
-                            ? "Two arterial lanes per direction"
-                            : `${Math.round(a.main_green_share * 100)}% of usable green to arterial`}
+                            ? `${a.main_lanes} arterial lanes per direction`
+                            : a.kind && kindNote[a.kind]
+                              ? kindNote[a.kind]
+                              : `${Math.round(a.main_green_share * 100)}% of usable green to arterial`}
                       </p>
+                      {!a.comparison.feasible && (
+                        <span className="option-reason">
+                          {(a.comparison.rejection_details ?? [])
+                            .map((d) => d.message)
+                            .join(" · ") || a.comparison.rejection_reasons.join(" · ")}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
+                <EvidenceSummaryPanel result={result} />
                 <div className="compare-layout">
                   <section className="panel comparison-detail">
                     <div className="panel-heading">
                       <h2>
-                        {names[active?.id ?? "reference"]} versus reference plan
+                        {optionName(active?.id ?? "reference", active?.label)} versus
+                        reference plan
                       </h2>
                       <span className="helper">3 paired seeds · means</span>
                     </div>

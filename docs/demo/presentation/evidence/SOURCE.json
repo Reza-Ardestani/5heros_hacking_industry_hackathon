@@ -1,0 +1,6 @@
+{
+  "endpoint": "http://127.0.0.1:8008/api/jobs/1099e73c93b943598aedbfe7bbc018e1/report",
+  "retrieved_at_utc": "2026-10-03T23:24:05Z",
+  "sha256": "5dc45125300a7067908af0eb025eac6275dfffb6bd741bb688b9ac31b9a8ba44",
+  "scope": "Recorded existing completed local simulation. No new simulation run. Synthetic corridor surrogate for Calgary intersection, not field-calibrated."
+}

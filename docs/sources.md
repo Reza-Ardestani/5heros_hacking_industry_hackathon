@@ -6,6 +6,7 @@ Checked/downloaded October 3, 2026 unless a snapshot says otherwise.
 |---|---|
 | [Organizer evidence index](../organizer_docs/README.md) | Local handbook; immutable lab snapshots; selected authenticated Discord channels |
 | [Calgary incidents](https://data.calgary.ca/d/35ra-9556) | 500 source rows for context, not measured traffic flow; exact URL/time/hash in data/snapshots/incidents_source.json |
+| [Calgary disruption dataset](../data/analysis/README.md) | Six months of incidents (35ra-9556), closures (w8zq-79bq), cameras, signals, travel times, projects, 2024 volumes; hashes in data/analysis/sources_manifest.json. Reported disruptions only |
 | [City traffic counts](https://www.calgary.ca/planning/transportation/data/vehicle.html), [CalTRACS](https://trafficcounts.calgary.ca/) | Next calibration source; actual study export remains unavailable in this build |
 | [OSM area](https://www.openstreetmap.org/api/0.6/map?bbox=-114.094,51.062,-114.077,51.073), [copyright](https://www.openstreetmap.org/copyright) | Investigative download only; synthetic model does not use OSM |
 | [SUMO documentation](https://sumo.dlr.de/docs/index.html), [TripInfo](https://sumo.dlr.de/docs/Simulation/Output/TripInfo.html), [Queue output](https://sumo.dlr.de/docs/Simulation/Output/QueueOutput.html) | Native simulation and outcome definitions; eclipse-sumo 1.27.1 locked |

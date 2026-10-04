@@ -10,6 +10,8 @@ Execute and record in progress.md, not assumed passes:
 - Health/incidents/scenario/job/result/report HTTP, busy/failure responses.
 - Frontend build; real browser experiment/result/export and visual QA.
 - Clean setup, attribution, links/four-file spec and original organizer preservation.
+- Design tokens: generated CSS stays reproducible; specified contrast pairs pass;
+  gallery and shared React styles render; reduced-motion overrides are present.
 
 Organizer approval, measured CalTRACS calibration, field effect, deployment,
 final screenshots/submission remain external delivery gates until evidenced.

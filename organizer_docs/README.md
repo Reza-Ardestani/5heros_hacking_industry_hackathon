@@ -29,6 +29,7 @@ revision is permitted; RL and LLM calls are not compulsory.
 | [Judging rubric](JUDGING_RUBRIC.md), [rules](RULES.md), [submission guide](SUBMISSIONS.md) | Local organizer checkout at b54dcdf3c7a36b56de4fa779a581545123e2be23, copied October 2 |
 | [Upstream README](upstream-2026-10-03/README.md), [design template](upstream-2026-10-03/DESIGN-DOC-TEMPLATE.md), [registration](upstream-2026-10-03/REGISTRATION.md), [code of conduct](upstream-2026-10-03/CODE_OF_CONDUCT.md), [license](upstream-2026-10-03/LICENSE) | Immutable c3fa12deea4df16c532d4ac16359be93002d34bb; URL/time metadata in SOURCE.json |
 | [Selected Discord guidance](discord/README.md) | Authenticated Safari read October 3; channel/message citations and coverage limits preserved |
+| [October 3 guidance delta](discord/updates-2026-10-03-evening.md) | Later authenticated read: optional starter/voice prize, custom-case approval, fictitious-column restriction; channel/time attribution and unresolved interpretation preserved |
 | [Opening slide deck](https://canva.link/f4u4rlrgfjq2fky) | Link observed in Discord; public first-slide view inspected. Export invoked a Canva sign-in prompt, so deck not downloaded or fully reviewed |
 
 Upstream: [industry-hackathon-lab](https://github.com/nagusubra/industry-hackathon-lab).

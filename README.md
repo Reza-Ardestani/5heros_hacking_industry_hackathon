@@ -46,6 +46,17 @@ make build
 make refresh
 ```
 
+Calgary disruption data (Intersections view, database, MCP tools —
+[design](docs/design/disruption-data/design.md)):
+
+```sh
+make disruptions    # backfill six months into data/db/disruptions.sqlite + export JSON/XLSX
+make collect        # one incremental poll; make collect-loop polls every 5 minutes
+make mcp            # MCP server over stdio; make mcp-http serves 127.0.0.1:8000/mcp
+```
+
+A fresh checkout seeds its database from the committed `data/analysis` exports.
+
 Build output is frontend-only; `make web` uses Vite's `/api` proxy. For deployment,
 `app.deploy:app` serves the API and built frontend together (see below).
 

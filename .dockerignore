@@ -9,5 +9,6 @@ frontend/dist
 data/raw
 data/runs
 data/db
+output
 .env
 .claude

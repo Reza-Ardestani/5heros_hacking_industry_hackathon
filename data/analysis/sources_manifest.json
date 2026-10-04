@@ -1,0 +1,77 @@
+{
+ "retrieved_at_utc": "2026-10-03T21:28:34",
+ "discovered_from": "https://www.calgary.ca/roads/conditions/traffic-cameras.html",
+ "license_url": "https://data.calgary.ca/stories/s/Open-Calgary-Terms-of-Use/u45n-7awa",
+ "attribution": "Contains information licensed under the Open Government Licence – City of Calgary",
+ "window": {
+  "start_local": "2026-04-01",
+  "months": 6
+ },
+ "sources": {
+  "cameras": {
+   "dataset": "k7p9-kppz",
+   "rows": 216,
+   "sha256": "73b376a2be5c4b4387f1625d9bcebc9ada22c150b86f6da133bae38b97ceb7c5",
+   "url": "https://data.calgary.ca/resource/k7p9-kppz.json?%24order=%3Aid&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:09:30",
+   "name": "Traffic Cameras"
+  },
+  "signals": {
+   "dataset": "qr97-4jvx",
+   "rows": 1791,
+   "sha256": "442436561d92053e7dcb271fe7f78b4947d9d6f01043f9f67e48a35c68908e82",
+   "url": "https://data.calgary.ca/resource/qr97-4jvx.json?%24order=%3Aid&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:09:32",
+   "name": "Traffic Signals"
+  },
+  "volumes_2024": {
+   "dataset": "cauu-7hnw",
+   "rows": 334,
+   "sha256": "72ae63277f7926007f88fb38450f5191c716c47fc73492e07287607eb26fab5d",
+   "url": "https://data.calgary.ca/resource/cauu-7hnw.json?%24order=%3Aid&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:09:34",
+   "name": "Traffic Volumes for 2024"
+  },
+  "projects": {
+   "dataset": "sizs-hgef",
+   "rows": 11,
+   "sha256": "79b9ba1a66714ecffcf3b5bff939fe4f1d970bb35d1f1865d19b358adf6da7ad",
+   "url": "https://data.calgary.ca/resource/sizs-hgef.json?%24order=%3Aid&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:09:34",
+   "name": "Road Construction Projects"
+  },
+  "incidents": {
+   "dataset": "35ra-9556",
+   "rows": 44,
+   "sha256": "7e92cdbdea32ead0a34f8e6bd20b7701cdd77f59f0134a6cb03efdd29ac3e204",
+   "url": "https://data.calgary.ca/resource/35ra-9556.json?%24where=start_dt_utc+%3E%3D+%272026-10-01T17%3A37%3A53%27&%24order=start_dt_utc+ASC&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:12:36",
+   "name": "Traffic Incidents (unofficial archive)"
+  },
+  "travel_times": {
+   "dataset": "aeb8-fh2w",
+   "rows": 68,
+   "sha256": "306754d3b9f585537a132c86112bd990461d83289ccea4e10bf4707e13b263a3",
+   "url": "https://data.calgary.ca/resource/aeb8-fh2w.json?%24order=%3Aid&%24limit=50000&%24offset=0",
+   "fetched_utc": "2026-10-03T19:13:47",
+   "name": "Travel Times"
+  },
+  "current_incidents": {
+   "dataset": "4jah-h97u",
+   "rows": 1,
+   "sha256": "9d743570f0efbe5cf66cd76e15ac96f7fe11622a3aca1391efaef48954ba4ba3",
+   "url": "https://data.calgary.ca/resource/4jah-h97u.json?$limit=500",
+   "fetched_utc": "2026-10-03T21:28:33",
+   "name": "Current Traffic Incidents"
+  },
+  "closures": {
+   "dataset": "w8zq-79bq",
+   "rows": 271,
+   "sha256": "34235692b500af47869880e9af09aa1bab449a347cea55e3d72c2eb9054ae445",
+   "url": "https://data.calgary.ca/resource/w8zq-79bq.json?$limit=2000",
+   "fetched_utc": "2026-10-03T21:28:34",
+   "name": "Construction Detours (scheduled road/lane closures)"
+  }
+ },
+ "database": "data/db/disruptions.sqlite"
+}
