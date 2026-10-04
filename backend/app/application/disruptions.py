@@ -1,6 +1,6 @@
 """Read service over the disruption store: summary, intersections, prediction, live feed.
 
-Shared by the HTTP API and the MCP server. Data comes from SQLite (see
+Shared by the HTTP API and the MCP server. Data comes from the shared Store (see
 app/infra/disruption_store.py); an empty database is seeded from the committed
 JSON exports. Incident counts are reported disruptions (camera-observed), not
 traffic flow, delay or crash risk.
@@ -659,9 +659,11 @@ def travel_time_history(corridor="", segment="", since="", limit=500):
 
 def status():
     s = store()
-    return {**s.stats(), "recent_runs": s.runs(15), "recent_predictions": s.predictions(5),
-            "last_collect_utc": s.get_meta("last_collect_utc"),
-            "last_backfill_utc": s.get_meta("last_backfill_utc")}  # fmt: skip
+    result = {**s.stats(), "recent_runs": s.runs(15), "recent_predictions": s.predictions(5),
+              "last_collect_utc": s.get_meta("last_collect_utc"),
+              "last_backfill_utc": s.get_meta("last_backfill_utc")}  # fmt: skip
+    result["storage"] = s.storage_status()
+    return result
 
 
 def collect_now(include_archive=True):

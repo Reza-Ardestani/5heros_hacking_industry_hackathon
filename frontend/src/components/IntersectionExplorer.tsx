@@ -28,6 +28,7 @@ import { IncidentDelayCard } from "./IncidentDelayCard";
 import { McpInfoMl } from "./McpInfoMl";
 import { PredictionPanel, emptySelection, type Selection } from "./PredictionPanel";
 import { PriorityPanel } from "./PriorityPanel";
+import { StorageStatus } from "./StorageStatus";
 
 const LIVE_REFRESH_MS = 60_000;
 // Calgary city-limit bounding box used to place points on the overview map.
@@ -309,6 +310,7 @@ export function IntersectionExplorer({
         </div>
       )}
 
+      <StorageStatus />
       <section className="panel ix-live">
         <div className="panel-heading">
           <div>

@@ -1,5 +1,11 @@
 # Progress
 
+October 4: TimescaleDB/SQLite constitution and four-file spec prepared before code.
+Adapter and visible fallback implemented on `codex/timescale-sqlite-backends`;
+78 backend tests (including real Timescale faults), 12 UI tests and build passed.
+Scoped lint passed; four existing full-lint permission errors remain. Not deployed.
+[Evidence](../specs/features/timescale-sqlite-backends/progress.md).
+
 October 3 (scoped corrections): actual-model forecast evidence and shared simulation
 status implemented on `codex/fix-forecast-and-job-status`; three independent reviews
 completed, 68 backend tests, 10 UI tests and local browser flow passed.

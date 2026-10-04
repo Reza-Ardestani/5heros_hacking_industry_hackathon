@@ -1,4 +1,4 @@
-.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image dev dev-check
+.PHONY: setup api web test build refresh disruptions collect collect-loop mcp mcp-http mcp-image dev dev-check db-up db-sync dev-timescale
 setup:
 	cd backend && uv sync --frozen
 	cd frontend && npm ci
@@ -14,11 +14,17 @@ build:
 refresh:
 	python3 scripts/refresh_incidents.py
 disruptions:
-	uv run --no-project --with openpyxl --with tzdata python scripts/build_disruption_dataset.py
+	cd backend && uv run --with openpyxl python ../scripts/build_disruption_dataset.py
 collect:
-	uv run --no-project --with tzdata python scripts/collect_disruptions.py
+	cd backend && uv run python ../scripts/collect_disruptions.py
 collect-loop:
-	uv run --no-project --with tzdata python scripts/collect_disruptions.py --every 300
+	cd backend && uv run python ../scripts/collect_disruptions.py --every 300
+db-up:
+	docker compose --env-file .env.timescale -f compose.timescale.yml up -d --wait --wait-timeout 60
+db-sync:
+	cd backend && uv run --env-file ../.env.timescale python ../scripts/sync_storage.py
+dev-timescale:
+	uv run --project backend --env-file .env.timescale python scripts/dev.py
 mcp:
 	cd backend && uv run --group mcp python -m app.mcp_server
 mcp-http:

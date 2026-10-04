@@ -28,7 +28,15 @@ seconds of delay per incident, evidence summary, click-a-dot area focus and the
 answers with the MCP tools and moves the UI (pages, intersections, quadrant, prediction
 panel, `mcp-info-ml`, intersection studies); built-in by default, Claude optional.
 
-## Later
+## Selected October 4 — dual storage
+
+User authorized [TimescaleDB with SQLite fallback](../specs/features/timescale-sqlite-backends/requirements.md).
+Implement after constitution/spec: durable local journal, ordered replication,
+time-series hypertable, offline migration, health reporting, persistent DB volume,
+SQLite regression and real Timescale outage/recovery verification. No production
+deployment or multi-host failover implied by local implementation.
+
+## Later storage and modeling work
 
 Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal
 mappings; redirect-to-parallel-route option; evaluate Chronos-2 as a fourth forecaster in

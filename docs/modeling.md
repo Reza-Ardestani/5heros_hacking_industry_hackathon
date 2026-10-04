@@ -23,5 +23,8 @@ following RCX catalog's artifact separation; no RCX product IDs/policies copied.
 | S-BB-1 | Spec | [requirements](../specs/features/phase-1-hackathon-mvp/requirements.md) |
 | S-BB-2 | Spec | [requirements](../specs/features/phase-2-disruption-context/requirements.md) |
 | S-BB-FIX-1 | Scoped correction spec | [Forecast evidence and job status](../specs/features/fix-forecast-evidence-and-job-status/requirements.md) |
+| S-BB-STORAGE-1 | Storage spec | [Timescale/SQLite](../specs/features/timescale-sqlite-backends/requirements.md) |
+| DES-BB-STORAGE-1 | Storage design | [durable mirror and fallback](design/timescale-sqlite/design.md) |
+| D-BB-STORAGE-1 | Storage diagram/ERD | [storage flow and recovery keys](diagrams/storage_failover.md) |
 | DES-BB-RESOURCE-001 | Proposed design | [Resource feasibility](design/resource-evidence/design.md) |
 | S-BB-RESOURCE-1 | Draft spec | [Resource evidence](../specs/features/phase-4-resource-evidence/requirements.md) |

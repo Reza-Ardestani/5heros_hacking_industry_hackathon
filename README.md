@@ -88,6 +88,26 @@ make mcp            # MCP server over stdio; make mcp-http serves 127.0.0.1:8000
 
 A fresh checkout seeds its database from the committed `data/analysis` exports.
 
+## Optional TimescaleDB with SQLite fallback
+
+SQLite remains the default. Enable TimescaleDB for typed travel-time history and
+mirrored reads; every write still commits locally, including changes queued during
+an outage. Reconnection replays saved changes without downloading City data again.
+
+```sh
+cp .env.timescale.example .env.timescale
+# Replace both matching password placeholders in this ignored file.
+make db-up
+make db-sync
+make dev-timescale
+```
+
+Requires Docker. Keep the SQLite directory and Timescale named volume persistent.
+This supports one shared local SQLite history, not independent server replicas.
+The Intersections view shows the active backend and queued changes.
+[Operation, recovery and deployment limits](docs/ops/storage.md).
+[Spec and acceptance evidence](specs/features/timescale-sqlite-backends/progress.md).
+
 Build output is frontend-only; `make web` uses Vite's `/api` proxy. For deployment,
 `app.deploy:app` serves the API and built frontend together (see below).
 

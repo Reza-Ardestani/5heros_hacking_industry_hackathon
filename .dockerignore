@@ -11,4 +11,6 @@ data/runs
 data/db
 output
 .env
+.env.*
+!.env.*.example
 .claude

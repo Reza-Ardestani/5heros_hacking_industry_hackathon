@@ -22,3 +22,15 @@ chosen on validation days before test scoring. The MCP server describes itself a
 `/mcp-info` (built from its live tool list) and the API mirrors it at `/api/mcp-info`.
 [Disruption data design](../docs/design/disruption-data/design.md). Real-world change requires engineering
 review and calibration. Numerical results must originate in simulator outputs.
+
+Storage amendment, user-authorized October 4: keep application/domain APIs intact.
+SQLite owns local atomic writes and a transactional outbox; the Timescale adapter
+replicates ordered row changes and a checkpoint in one PostgreSQL transaction.
+API/MCP/collectors share this boundary. Reads prefer the caught-up Timescale mirror,
+otherwise use SQLite and expose degradation/backlog. A persisted source identity
+prevents mixing independent SQLite writers in the same PostgreSQL destination.
+Existing SQLite rows bootstrap locally without re-downloading City data. Neither
+database credentials nor raw connection errors are returned to callers.
+[Design](../docs/design/timescale-sqlite/design.md),
+[diagram](../docs/diagrams/storage_failover.md),
+[spec](../specs/features/timescale-sqlite-backends/requirements.md).
