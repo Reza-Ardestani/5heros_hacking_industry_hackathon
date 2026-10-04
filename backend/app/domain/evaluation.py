@@ -129,8 +129,10 @@ def economics(hours_saved: float, cost: float, scenario) -> dict:
     }
 
 
-COST_FACTORS = (0.5, 0.75, 1.0, 1.25, 1.5)
-BUDGET_FACTORS = (0.5, 0.75, 1.0, 1.25, 1.5)
+# +-20% matches the demand stress check and a typical early-estimate contingency; +-50% is
+# the extreme. Exact break-evens (headroom, switch points) cover every value in between.
+COST_FACTORS = (0.5, 0.8, 1.0, 1.2, 1.5)
+BUDGET_FACTORS = (0.5, 0.8, 1.0, 1.2, 1.5)
 LEGACY_REASONS = {"budget": "budget", "guardrail": "cross_street", "Incomplete": "complete_trips"}
 
 

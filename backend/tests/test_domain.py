@@ -115,7 +115,8 @@ def test_cost_stress_finds_robust_and_fragile_recommendations():
     fragile = cost_stress(fragile_rows, "retime", scenario)
     assert fragile["robust_share_pct"] < 100
     assert fragile["switch_points"][0]["budget_increase_pct"] == 20
-    assert fragile["grid"][-1][2] == "turn_lane"  # budget x1.5, costs unchanged
+    assert fragile["grid"][3][2] == "turn_lane"  # budget +20% (= $120k), costs unchanged
+    assert fragile["grid"][3][3] == "retime"  # ...but not if costs also rise 20%
     assert fragile["grid"][0][2] == "retime"
     assert {c["id"] for c in fragile["one_at_a_time"]} == {"turn_lane"}
     assert "+20%" in fragile["verdict"]
