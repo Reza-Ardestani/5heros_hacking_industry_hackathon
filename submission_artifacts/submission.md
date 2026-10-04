@@ -54,6 +54,8 @@ In the [recorded synthetic SUMO experiment](https://github.com/Reza-Ardestani/5h
 
 ## 6. Challenges and future works.
 
+Our main challenges are calibrating the synthetic simulation with measured Calgary traffic counts and signal timings, validating forecasts on fresh data and sparse intersections, and verifying intervention costs and feasibility. Next steps include integrating material, equipment, and maintenance APIs; improving forecast uncertainty; making simulation jobs durable; and piloting the workflow with transportation planners. Real-world interventions will require engineering review, including safety, pedestrian impacts, and construction constraints.
+
 ## 7. Live webapp and demo
 
 1. **Live webapp:** [Open Bottleneck Busters](https://bottleneck-busters-main-6xv7jvg66wh455x-8080.app.github.dev/). **Username:** `bottleneck` · **Password:** `XX5DIh2lfEFo`.
