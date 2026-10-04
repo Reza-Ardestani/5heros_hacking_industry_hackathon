@@ -28,6 +28,11 @@ Bottleneck Busters was inspired by our teammate Amy Miller, who has lived in Cal
 
 ## 2. User Journeys 
 
+1. **Monitor the city and selected areas.** Users explore Calgary's intersection map, live City-reported incidents and closures, and historical disruption patterns. They filter by area or road to identify locations worth investigating; these records provide disruption context rather than direct measurements of congestion.
+
+2. **Configure budgets, assumptions, and intervention options.** Users set the available budget, traffic demand, estimated intervention costs, and cross-street protection limits, then select changes to test, such as signal retiming or added road capacity. Material and equipment availability are planned extensions; future integrations with cost, inventory, and maintenance APIs could streamline these inputs.
+
+3. **Find, test, and justify an intervention — the core journey.** Users prioritize reported disruption hotspots using historical evidence and machine-learning forecasts, then run SUMO simulations to compare interventions against the same reference scenario. The agent evaluates delay, budget, and cross-street tradeoffs, revises unsuitable proposals, and explains the best feasible modeled option with an auditable report. Forecasts support investigation; simulation results support intervention comparison, with engineering review required before implementation.
 
 ## 3. Architecture and Design
 
