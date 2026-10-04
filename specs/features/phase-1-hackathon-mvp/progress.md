@@ -1,5 +1,21 @@
 # Progress — October 3, 2026
 
+## Shared design tokens — later user request
+
+Implemented FR-10 / DES-BB-UI-001: 66 JSON-source tokens, generated CSS and scoped
+contrast report, generation command wired into frontend prebuild, usage/rationale,
+and a browser gallery with explicitly illustrative specimens. Base typography,
+navigation colors, actions, evidence badges, focus and motion now consume shared
+tokens. Specialized feature/chart CSS still contains literals; migration is partial.
+
+Validation: production TypeScript/Vite build passed; all 21 specified contrast
+pairs passed their 4.5:1 text / 3:1 UI thresholds. Regeneration produced identical
+CSS/report hashes; all 31 app CSS token references and authored links resolved.
+Gallery interaction, computed React action color/font, and default desktop layout
+verified in browser; no page overflow or console errors observed. Gallery and app
+screenshots saved locally under ignored output/design-tokens/. No whole-app
+accessibility, responsive-device, new simulation, or hosted acceptance claim.
+
 ## Implemented locally
 
 User authorized early build, then requested guided walkthrough after rejecting

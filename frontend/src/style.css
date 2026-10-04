@@ -1,11 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import "./design-tokens/tokens.css";
 :root {
-  font-family: "DM Sans", system-ui, sans-serif;
-  color: #213b45;
-  background: #f5f7f8;
+  font-family: var(--bb-font-body);
+  color: var(--bb-color-ink);
+  background: var(--bb-color-canvas);
   font-synthesis: none;
-  font-size: 14px;
-  font-weight: 450;
+  font-size: var(--bb-font-body-size);
+  font-weight: var(--bb-font-regular);
 }
 * {
   box-sizing: border-box;
@@ -27,16 +28,27 @@ button:disabled {
 button,
 a,
 input {
-  outline-color: #16796c;
-  outline-offset: 3px;
+  outline-color: var(--bb-color-focus);
+  outline-offset: var(--bb-border-focus-offset);
 }
 a {
   color: inherit;
 }
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: var(--bb-border-focus-width) solid var(--bb-color-focus);
+  outline-offset: var(--bb-border-focus-offset);
+}
+.sidebar :focus-visible {
+  outline-color: var(--bb-color-on-brand);
+}
 button {
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--bb-motion-quick) var(--bb-motion-ease),
+    border-color var(--bb-motion-quick) var(--bb-motion-ease);
 }
 svg {
   flex-shrink: 0;
@@ -54,8 +66,8 @@ p {
   position: fixed;
   inset: 0 auto 0 0;
   width: 220px;
-  background: #102b36;
-  color: #b5c5cb;
+  background: var(--bb-color-nav);
+  color: var(--bb-color-nav-text);
   padding: 30px 18px;
   display: flex;
   flex-direction: column;
@@ -110,7 +122,7 @@ p {
   background: #1a3c48;
 }
 .sidebar nav button.selected {
-  background: #224754;
+  background: var(--bb-color-nav-active);
   color: #fff;
 }
 .sidebar nav button small {
@@ -138,7 +150,7 @@ p {
   margin-top: 9px;
 }
 .sidebar-bottom p {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--bb-font-heading);
   margin-top: 22px;
   color: #b8d3d5;
   font-size: 14px;
@@ -192,20 +204,20 @@ main {
   white-space: nowrap;
 }
 .badge.neutral {
-  color: #657b83;
-  background: #f0f3f4;
+  color: var(--bb-color-neutral);
+  background: var(--bb-color-neutral-surface);
 }
 .badge.green {
-  color: #24725c;
-  background: #e8f3eb;
+  color: var(--bb-color-observed);
+  background: var(--bb-color-observed-surface);
 }
 .badge.amber {
-  color: #967139;
-  background: #fbf1de;
+  color: var(--bb-color-assumed);
+  background: var(--bb-color-assumed-surface);
 }
 .badge.blue {
-  color: #406b90;
-  background: #eaf1f9;
+  color: var(--bb-color-modeled);
+  background: var(--bb-color-modeled-surface);
 }
 .page-body {
   padding: 30px 38px 0;
@@ -226,7 +238,7 @@ main {
   color: #648783;
 }
 h1 {
-  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-family: var(--bb-font-heading);
   font-size: 31px;
   font-weight: 600;
   letter-spacing: -1.1px;
@@ -243,7 +255,8 @@ h1 {
   gap: 10px;
 }
 .button {
-  border-radius: 6px;
+  border-radius: var(--bb-radius-control);
+  min-height: var(--bb-size-control);
   padding: 11px 15px;
   border: 1px solid transparent;
   font-size: 12px;
@@ -256,20 +269,20 @@ h1 {
   white-space: nowrap;
 }
 .button.primary {
-  color: white;
-  background: #19766b;
-  border-color: #19766b;
+  color: var(--bb-color-on-brand);
+  background: var(--bb-color-brand);
+  border-color: var(--bb-color-brand);
 }
 .button.primary:hover {
-  background: #115f56;
+  background: var(--bb-color-brand-hover);
 }
 .button.secondary {
-  background: #fff;
-  color: #4c6470;
-  border-color: #dce5e8;
+  background: var(--bb-color-surface);
+  color: var(--bb-color-muted);
+  border-color: var(--bb-color-border-strong);
 }
 .button.secondary:hover {
-  background: #edf3f5;
+  background: var(--bb-color-subtle);
 }
 .button.disabled {
   opacity: 0.45;
@@ -405,7 +418,7 @@ h1 {
   gap: 8px;
 }
 .flow-field strong {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 15px;
   color: #274b59;
 }
@@ -585,7 +598,7 @@ h1 {
   height: 3px;
 }
 .playback-controls > span {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 11px;
   color: #68868f;
   min-width: 38px;
@@ -732,7 +745,7 @@ h1 {
 }
 .stat > strong {
   display: block;
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 27px;
   font-weight: 550;
   letter-spacing: -1px;
@@ -804,7 +817,7 @@ h1 {
 }
 .option-card > strong {
   display: block;
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 28px;
   letter-spacing: -0.8px;
   margin: 20px 0 9px;
@@ -927,7 +940,7 @@ h1 {
 }
 .economic-estimate > strong {
   display: block;
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 24px;
   margin: 8px 0;
   color: #386858;
@@ -1121,7 +1134,7 @@ td small {
 }
 .trace-number {
   color: #a2b1b8;
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 11px;
 }
 .trace-action {
@@ -1216,7 +1229,7 @@ td small {
   color: #809ca5;
 }
 .empty-state h2 {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   color: #405e6e;
   font-size: 25px;
   font-weight: 500;
@@ -1613,7 +1626,7 @@ footer span span {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
 }
 .wizard-progress strong {
   font-weight: 500;
@@ -1643,7 +1656,7 @@ footer span span {
   padding: 35px 36px;
 }
 .problem-story h2 {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 34px;
   font-weight: 550;
   line-height: 1.25;
@@ -1771,7 +1784,7 @@ footer span span {
   color: #387b66;
 }
 .illustration-cost strong {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   font-size: 16px;
   font-weight: 500;
 }
@@ -1863,7 +1876,7 @@ footer span span {
   border-top: 1px solid #edf1f3;
 }
 .intervention-row > span {
-  font-family: "Space Grotesk";
+  font-family: var(--bb-font-heading);
   color: #adc0c8;
   font-size: 11px;
   margin-top: 2px;
@@ -2084,7 +2097,7 @@ footer span span {
 .ix-headline strong,
 .ix-kpis strong {
   display: block;
-  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-family: var(--bb-font-heading);
   font-size: 24px;
   color: #102b36;
 }
@@ -2286,7 +2299,7 @@ footer span span {
   flex-wrap: wrap;
 }
 .ix-detail-head h2 {
-  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-family: var(--bb-font-heading);
   font-size: 22px;
   margin: 4px 0 10px;
 }
@@ -2502,7 +2515,7 @@ footer span span {
 }
 .px-headline strong {
   display: block;
-  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-family: var(--bb-font-heading);
   font-size: 26px;
   color: #102b36;
   margin: 3px 0;
@@ -2934,7 +2947,7 @@ footer span span {
   color: #648783;
 }
 .incident-delay-figures strong {
-  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-family: var(--bb-font-heading);
   font-size: 24px;
   color: #102b36;
 }

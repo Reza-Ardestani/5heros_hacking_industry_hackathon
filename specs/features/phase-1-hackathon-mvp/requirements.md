@@ -39,3 +39,8 @@ Out of scope: citywide twin, real signal control/removal, RL training, crash-ris
 FR-9 User-requested guided flow: problem, interventions/constraints, actual simulation,
 recommendation. Evidence remains separately accessible; edited inputs clearly mark
 prior results stale. Mobile navigation has accessible names; no page-wide overflow.
+
+FR-10 User-authorized shared design tokens for the desktop-first React planner
+workflow: JSON source, generated CSS, accessible evidence-state pairings, spacing,
+typography, and a visual gallery. Scope and rationale:
+[DES-BB-UI-001](../../../docs/design/design-system/design.md).
