@@ -84,8 +84,23 @@ Our main challenges are calibrating the synthetic simulation with measured Calga
 
 **Project screenshots:**
 
-1. [Planning workspace](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/01-planning-workspace.jpg)
-2. [Intervention design](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/02-intervention-design.jpg)
-3. [Agent simulation](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/03-agent-simulation.jpg)
-4. [Recommendation comparison](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/04-recommendation-comparison.jpg)
-5. [Calgary intersections](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/05-calgary-intersections.jpg)
+### 1. Planning workspace
+
+[![Planning workspace](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/01-planning-workspace.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/01-planning-workspace.jpg)
+
+### 2. Intervention design
+
+[![Intervention design](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/02-intervention-design.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/02-intervention-design.jpg)
+
+### 3. Agent simulation
+
+[![Agent simulation](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/03-agent-simulation.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/03-agent-simulation.jpg)
+
+### 4. Recommendation comparison
+
+[![Recommendation comparison](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/04-recommendation-comparison.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/04-recommendation-comparison.jpg)
+
+### 5. Calgary intersections
+
+[![Calgary intersections](https://raw.githubusercontent.com/Reza-Ardestani/5heros_hacking_industry_hackathon/main/submission_artifacts/05-calgary-intersections.jpg)](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon/blob/main/submission_artifacts/05-calgary-intersections.jpg)
+
