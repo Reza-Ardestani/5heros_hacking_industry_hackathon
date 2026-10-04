@@ -1,0 +1,49 @@
+Hi Bottleneck Busters,
+
+Thanks for reaching out. This is an interesting concept, and I think the decision-support aspect could be particularly valuable if you can connect the technical analysis to how decisions actually need to be justified within the City.
+
+I can certainly share some perspective from my experience working within the City, particularly around Mobility, Traffic Field Operations, Construction & Materials, safety, risk, and how operational considerations can influence decisions. I’d also be happy to point you toward people who may be better positioned to speak specifically to capital planning, business cases and investment prioritization.
+
+A few thoughts on your questions:
+
+• What needs to be documented before spending is approved? Generally, a business case would be an important component, particularly for larger investments. That would typically need to consider the problem being addressed, options, costs, risks, benefits, implementation considerations and the consequences of not proceeding. A meaningful risk analysis and risk matrix, along with cost analysis, would also be important. Depending on the project, appropriate engineering/technical review, approvals and procurement requirements would also apply.
+
+Importantly, I wouldn't look at the financial cost in isolation. The analysis should also consider the impacts on Calgary's citizens and the travelling public — including disruption, congestion, access, safety, delays, inconvenience and other consequences associated with construction or implementation.
+
+• How decisions are actually justified: A strong recommendation needs to demonstrate more than simply "this is the best engineering solution." Decision-makers need to understand the problem, the consequences of doing nothing, the alternatives considered, expected benefits, risks, costs, timing and how the recommendation aligns with City priorities and available funding.
+
+There can also be significant value in identifying opportunities where additional work can be completed with relatively limited incremental financial or public impact. For example, if crews, traffic control, road closures or construction activities are already mobilized, there may be an opportunity to complete additional work within the same construction window. Likewise, near the end of a construction season, weather, contractor availability, existing closures or the opportunity to accelerate completion can become important considerations. Where a project can deliver more work while minimizing additional financial cost or inconvenience to citizens, that can potentially strengthen the case for moving it forward more quickly.
+
+• Choosing between solutions: I wouldn't characterize it as one universal checklist that applies to every mobility decision. The appropriate solution can depend on safety, operational performance, traffic impacts, constructability, cost, maintenance, stakeholder impacts, regulatory requirements, timing and the expected life of the investment.
+
+I'd also suggest your model consider the "opportunity to do more while we're already there" factor. A solution that might not otherwise rank first could become much more attractive if it can be delivered alongside another project and avoid duplicating mobilization, traffic disruption, closures or other costs.
+
+• Competing priorities: This is where a transparent prioritization framework becomes particularly valuable. Projects can potentially be compared using consistent criteria such as risk, safety, service impact, public impact, benefit, urgency, cost, asset condition, strategic alignment, timing and consequences of deferral.
+
+• Value of delay/congestion: There are certainly ways of quantifying user impacts such as travel time, delay and disruption. I'd encourage you to consider both the direct financial cost and the broader public impact. A project that saves money but creates significant additional disruption may not necessarily represent the best overall value, while a project with a higher upfront cost could potentially provide greater overall benefit if it substantially reduces recurring congestion, risk or future disruption.
+
+• What would make me trust the recommendation: I'd want to see the source data, assumptions, methodology, limitations and sensitivity of the result. In particular, I'd want to know whether the model is identifying a genuinely good investment or simply producing a high score because of the way certain variables were weighted.
+
+I'd also want the tool to clearly show why something ranks highly. A director should be able to look at the recommendation and quickly understand:
+
+What is the problem?
+How significant is it?
+What happens if we do nothing?
+What options were considered?
+Why is this option recommended?
+What will it cost?
+What are the public impacts?
+What risks are being reduced?
+What efficiencies or opportunities can be captured?
+What benefit do we receive for the investment?
+What are the assumptions and limitations?
+
+That transparency would be particularly important if you're hoping the tool could eventually support a recommendation going forward to senior leadership or Council.
+
+As for introductions, I can certainly think about who within Mobility or the broader capital-planning/investment side would be the most appropriate person to speak with. I can't promise an introduction until I know exactly what you're looking for, but I'm happy to help point you in the right direction.
+
+Good luck to Bottleneck Busters — the problem you're trying to tackle is definitely worth solving.
+
+Trevor
+
+Sent from my iPhone

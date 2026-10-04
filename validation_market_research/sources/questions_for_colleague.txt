@@ -1,0 +1,12 @@
+@Morty To send to Leah to forward to her contact: Hi! We're Bottleneck Busters, a team at the IEEE Young Professionals Industry Hackathon in Calgary this weekend. Calgary's metro population grew about 19% from 2021 to 2025, roads and pathways have a $9.2 billion unfunded need over the next 10 years, and 39% of Calgarians now name infrastructure, traffic and roads as their top issue. Big fixes usually go through studies that take a year or two before anyone picks an option.
+
+We're building a decision tool for the City's Mobility team. It ranks the worst bottlenecks using City data, matches each one to fixes that worked in other cities, tests those fixes in a Calgary simulation, and gives back a short list with costs and payback that a director could take to Council.
+
+We'd love your perspective on how spending decisions actually get made and justified at the City.
+
+What must be documented before spending is approved (business case, risk assessment, engineer sign-off, procurement)?
+How do you choose between the different potential solutions? Is there a standard or checklist?
+When two needs compete for the same money, how do you decide? Is there a scoring or risk matrix?
+Does the City put a dollar value on drivers' lost time or lane closures when weighing a project?
+What would a recommendation need to show for you or your director to trust it?
+Is there someone in Mobility or capital planning you'd suggest we talk to about road investment decisions? Would you be open to introducing us?

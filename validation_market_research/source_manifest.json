@@ -1,0 +1,85 @@
+{
+  "collected_on": "2026-10-04",
+  "server": "IEEE Hackathon Team-Cool Craft Creators",
+  "server_id": "1555747985898606742",
+  "displayed_time_note": "Discord times copied as displayed in the user session; timezone not independently verified",
+  "items": [
+    {
+      "path": "sources/leah_meeting_transcript.txt",
+      "kind": "meeting_transcript",
+      "original_filename": "Leah",
+      "retrieval": "byte-for-byte copy of local file",
+      "local_source": "/Users/reza/Documents/Leah",
+      "discord_message_url": null,
+      "source_status": "Discord post not located; local transcript preserved",
+      "posted_at": null,
+      "bytes": 16078,
+      "sha256": "54042eb9a15ca6817941f5d3869f616ff203a3d9950609347cb5b9126b4ad24f"
+    },
+    {
+      "path": "sources/questions_for_colleague.txt",
+      "kind": "outreach_questions",
+      "retrieval": "manual transcription of full visible Discord message; paragraphs and question line breaks retained",
+      "discord_message_url": "https://discord.com/channels/1555747985898606742/1555747987286663243/1556116040390283365",
+      "posted_by": "Amy Miller",
+      "posted_at_displayed": "2026-10-03 7:29 PM",
+      "source_status": "Original message visually verified",
+      "bytes": 1506,
+      "sha256": "ea7af25066a744afc546fe15c182b760d8f67250109459aacf32dcd9e4dda3a6"
+    },
+    {
+      "path": "sources/questions_discord.png",
+      "kind": "source_screenshot",
+      "retrieval": "cropped computer-use screenshot of question message; unrelated UI excluded",
+      "discord_message_url": "https://discord.com/channels/1555747985898606742/1555747987286663243/1556116040390283365",
+      "bytes": 833327,
+      "sha256": "8849810f3a0921017996efdfac53685d8a32ef69ffab49cc8181c7d96fe25498"
+    },
+    {
+      "path": "sources/colleague_response.txt",
+      "kind": "forwarded_colleague_response",
+      "original_filename": "message.txt",
+      "retrieval": "downloaded via Discord file preview; renamed locally; bytes unchanged",
+      "local_download": "/Users/reza/Downloads/message.txt",
+      "discord_message_url": "https://discord.com/channels/1555747985898606742/1555747987286663243/1556129715343851573",
+      "posted_by": "Morty",
+      "signed_by": "Trevor",
+      "posted_at_displayed": "2026-10-03 8:23 PM",
+      "bytes": 5605,
+      "sha256": "6fadabf72a2c719c3cbd52a4d2e154060ae6f63948bbd1e449cee6caea6477cf"
+    },
+    {
+      "path": "sources/interim-transportation-corridor-study-guidelines--2014-.pdf",
+      "kind": "shared_pdf",
+      "original_filename": "interim-transportation-corridor-study-guidelines--2014-.pdf",
+      "retrieval": "copied existing local download; matching attachment filename and size observed in Discord; local duplicate downloads have identical hashes",
+      "local_source": "/Users/reza/Downloads/interim-transportation-corridor-study-guidelines--2014-.pdf",
+      "discord_message_url": "https://discord.com/channels/1555747985898606742/1555747987286663243/1556122922236510208",
+      "attachment_id": "1556122920563253420",
+      "posted_by": "Morty",
+      "posted_at_displayed": "2026-10-03 7:56 PM",
+      "pdf_title": "2014 Interim Transportation Corridor Study Guidelines",
+      "pdf_author": "City of Calgary",
+      "pdf_pages": 85,
+      "source_status": "Shared document identified; attribution to Leah supplied by user",
+      "bytes": 3311335,
+      "sha256": "dd1a44cda284beb48a53dd617925db2faec95f59b13a04e399cd9026aaa53f5d"
+    },
+    {
+      "path": "leah_context.md",
+      "kind": "derived_research_note",
+      "retrieval": "paraphrase of local transcript with evidence limitations",
+      "derived_from": [
+        "sources/leah_meeting_transcript.txt",
+        "sources/questions_for_colleague.txt",
+        "sources/colleague_response.txt"
+      ],
+      "bytes": 2404,
+      "sha256": "5b8cd6875faa577c7d3417a1aec6ee029aba2d03912cf1ceeded41f53d9a6386"
+    }
+  ],
+  "gaps": [
+    "Meeting transcript Discord permalink not located",
+    "Separate original Leah information post not located"
+  ]
+}
