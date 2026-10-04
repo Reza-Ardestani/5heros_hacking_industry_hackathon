@@ -12,7 +12,8 @@ cross-street impacts with an auditable report.
 **Industry Hackathon · Energy and Infrastructure Systems · Custom case**
 
 [User journeys](#user-journeys) · [Architecture](#architecture-and-design) ·
-[Dataset](#dataset) · [Results](#results) · [Run locally](#run-locally)
+[Dataset](#dataset) · [Methods and algorithms](#methods-and-algorithms) ·
+[Results](#results) · [Run locally](#run-locally)
 
 ## Introduction and problem statement
 
@@ -139,6 +140,101 @@ window. Incident records cannot establish the benefit of changing a signal.
 [Source manifest](data/analysis/sources_manifest.json) ·
 [Arrival profiles and calibration gaps](data/README.md)
 
+## Methods and Algorithms
+
+The workflow connects three questions: where should a planner investigate, which
+interventions should they test, and how robust is the recommendation? Incident
+forecasts support the first question; traffic simulation supports the second.
+
+### Forecasting reported incidents
+
+**Empirical Bayes** estimates incident rates by weekday and five time-of-day
+periods. It combines a selection's own counts with a citywide weekly pattern,
+scaled to that selection's overall rate. A prior equivalent to **16 weeks**
+stabilizes estimates where local observations are sparse. Forecast horizons
+range from **1 to 28 days**.
+
+**LightGBM Poisson regression** is the machine-learning challenger. Gradient
+boosted trees learn from weekday, time period, weekend/holiday flags, day index,
+and historical citywide and Bayesian rates. The current configuration uses 200
+rounds, a 0.05 learning rate, and seven leaves per tree; eligibility requires at
+least 30 training incidents. A **flat daily average** provides a simple baseline.
+
+Model selection compares daily mean absolute error across **four rolling 14-day
+validation windows**. Bayes remains the default unless a challenger improves
+error by more than **two paired standard errors**. A separate final 28-day test
+evaluates the choice; it does not select the model. Future forecasts refit the
+selected method on available history. **Negative-binomial intervals** show
+nominal 80% uncertainty ranges, allowing counts to vary more than a Poisson model
+would predict; dispersion is estimated from training data.
+
+[Forecast and validation implementation](backend/app/domain/forecast.py) ·
+[LightGBM features and configuration](backend/app/domain/ml_forecast.py)
+
+### Prioritizing locations and detecting changes
+
+The priority shortlist uses **empirical-Bayes expected counts** for corridors
+and intersections. The prediction panel additionally compares forecast models.
+Planners can rank by expected incidents, expected lane-blocking incidents, recent
+changes, or a rough traffic-volume normalization. Lane-blocking shares shrink
+toward the citywide share using ten pseudo-incidents; minimum history thresholds
+are ten incidents for corridors and five for intersections.
+
+For recent changes, an **exact binomial test** compares the fraction of each
+location's incidents occurring in the last 28 observed days with the equivalent
+citywide fraction.
+**Benjamini–Hochberg correction**, at a 10% false-discovery rate, screens the
+multiple comparisons before labeling locations as rising or falling. Volume
+normalization is exploratory context, not an exposure-adjusted safety measure.
+
+[Ranking and change-detection implementation](backend/app/application/disruptions.py)
+
+### Simulating and revising interventions
+
+**SUMO microscopic traffic simulation** tests vehicles on a synthetic
+three-junction corridor. Seeded exponential inter-arrival times generate demand;
+alternatives use paired arrival inputs so their comparisons face equivalent
+traffic. Reports measure total and cross-street delay, including departure delay,
+and account for planned trips that do not finish within the simulation horizon.
+
+A **rule-based propose–evaluate–revise loop** starts with a signal green share
+derived from arterial and cross-street demand, bounded between 30% and 80%.
+If cross-street delay exceeds the configured guardrail, the revision moves the
+split toward equal green using the allowed-to-observed delay ratio and a 20%
+margin. Otherwise, a five-percentage-point adjustment responds to the relative
+delays. The loop also evaluates enabled capacity or hotspot interventions.
+
+Proposals are fixed before evaluation on **three separate paired seeds**.
+The decision rule selects the lowest-total-delay tested option that meets the
+capital budget, cross-street guardrail, and trip-completion requirement, with
+cost breaking ties. Optional disruption studies combine normal and lane-blocked
+simulations using an incident weight; blockage duration remains a scenario
+assumption. This is a bounded search driven by coded policies. Optional LLM chat
+helps users navigate and invoke tools; it does not train or control the planner.
+
+[Planner policies](backend/app/application/planner.py) ·
+[SUMO adapter and delay accounting](backend/app/infra/simulation.py) ·
+[Evaluation and selection rules](backend/app/domain/evaluation.py)
+
+### Comparing tradeoffs and checking robustness
+
+**Pareto analysis** identifies feasible options for which no other tested option
+offers both lower cost and lower delay. An illustrative economic calculation
+converts saved vehicle-hours into annual time value using assumed occupancy,
+value of time, and operating days, then subtracts annualized capital and
+operating costs.
+
+**Demand stress tests** rerun the recommendation and its reference at **−20% and
++20% demand**, checking feasibility and whether delay still improves. They report
+fragility without automatically choosing a new plan. **Cost/budget sensitivity**
+crosses factors of 0.5, 0.8, 1.0, 1.2, and 1.5 in a 25-case grid and reapplies the
+selection rule. These financial changes do not require new traffic simulations.
+All conclusions depend on the stated geometry, arrivals, costs, and model
+assumptions; field calibration remains future work.
+
+[Pareto and economic calculations](backend/app/domain/evaluation.py) ·
+[Stress-test orchestration](backend/app/application/planner.py)
+
 ## Results
 
 Forecasting identifies locations worth investigating. Simulation compares
@@ -160,11 +256,8 @@ choose the model. The final test models fit the same 156 pre-test observed days.
 | LightGBM challenger | 6.229 | 82.1% |
 
 The selected forecast reduced mean absolute error by **10.8%** relative to the
-flat reference on this window. Empirical Bayes models weekday/time-of-day rates
-with 16 pseudo-weeks of shrinkage; LightGBM competes using calendar and historical
-rate features. The current rule keeps Bayes unless a challenger improves validation
-error by more than two paired standard errors. Negative-binomial ranges account
-for variation beyond Poisson counts, using dispersion estimated from training data.
+flat reference on this window. The model-selection and uncertainty methods are
+described [above](#methods-and-algorithms).
 
 This is a single citywide retrospective window. It does not establish
 performance at every intersection or future operational accuracy. Settings were
