@@ -28,6 +28,16 @@ if [ -z "${BB_AUTH_PASSWORD:-}" ]; then
   BB_AUTH_PASSWORD=$(cat "$password_file")
 fi
 
+# SUMO's binary links libGL and X libraries even when run headless; install them if missing
+# (the base image's Yarn apt source has an expired key and breaks apt-get update).
+if ! ldconfig -p | grep -q "libGL.so.1"; then
+  echo "== installing system libraries SUMO needs"
+  sudo rm -f /etc/apt/sources.list.d/yarn.list
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq --no-install-recommends libgl1 libglu1-mesa libxrender1 \
+    libxcursor1 libxft2 libxinerama1 libxrandr2 libxi6 libfontconfig1
+fi
+
 pkill -f "uvicorn app\." 2>/dev/null || true
 pkill -f "app.mcp_server" 2>/dev/null || true
 
