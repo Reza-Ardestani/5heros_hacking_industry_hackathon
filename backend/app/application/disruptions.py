@@ -23,6 +23,7 @@ from app.application.disruption_collector import (
     seed_from_exports,
 )
 from app.domain import forecast as model
+from app.domain import ml_forecast
 from app.domain.geo import PointIndex, dist_m
 from app.infra import city_open_data
 from app.infra.disruption_store import ROOT, Store
@@ -188,6 +189,24 @@ def _build_intersections(incidents, cams):
     return out
 
 
+MAX_RADIUS_M = 10_000
+
+
+def _near(items, lat, lon, radius_m):
+    """Keep records/intersections within radius_m of (lat, lon); no-op without an area."""
+    if lat is None or lon is None or not radius_m:
+        return items
+    radius_m = max(50, min(float(radius_m), MAX_RADIUS_M))
+    return [i for i in items if dist_m(lat, lon, i["latitude"], i["longitude"]) <= radius_m]
+
+
+def _area_label(lat, lon, radius_m, label=""):
+    if lat is None or lon is None or not radius_m:
+        return None
+    where = label or f"{lat:.4f}, {lon:.4f}"
+    return f"within {radius_m / 1000:g} km of {where}"
+
+
 def _public(i):
     return {k: v for k, v in i.items() if not k.startswith("_")}
 
@@ -216,8 +235,9 @@ def full_summary():
     return {**d["summary"], "data_quality": d["data_quality"], "manifest": d["manifest"]}
 
 
-def list_intersections(q="", quadrant="", category="", sort="incidents", limit=40):
-    items = list(_load()["intersections"].values())
+def list_intersections(q="", quadrant="", category="", sort="incidents", limit=40,
+                       lat=None, lon=None, radius_m=0):  # fmt: skip
+    items = _near(list(_load()["intersections"].values()), lat, lon, radius_m)
     if q:
         needle = q.lower()
         items = [i for i in items if needle in i["key"].lower()]
@@ -306,8 +326,14 @@ def options(quadrant=ANY, route=ANY):
     }  # fmt: skip
 
 
+FORECAST_MODELS = ("auto", "flat", "bayes", "lightgbm")
+
+
 def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, intersection=ANY,
-            horizon_days=7, save=False, origin="api"):  # fmt: skip
+            horizon_days=7, save=False, origin="api", model_name="auto",
+            lat=None, lon=None, radius_m=0, area_label=""):  # fmt: skip
+    """Forecast reported incidents. model_name="auto" uses the model chosen on validation
+    days (flat baseline, empirical-Bayes rates or LightGBM); others force that model."""
     d = _load()
     days = d["observed_days"]
     if intersection:
@@ -323,16 +349,32 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
         "intersection_key": intersection,
     }
     rows = [r for r in d["incidents"] if all(not v or r[k] == v for k, v in filters.items())]
+    rows = _near(rows, lat, lon, radius_m)
+    area = _area_label(lat, lon, radius_m, area_label)
     times = [model_time(r) for r in rows]
     horizon_days = max(1, min(int(horizon_days), MAX_HORIZON_DAYS))
     start = d["forecast_start"]
-    result = model.forecast(times, days, d["city_times"], start, horizon_days)
+    if model_name not in FORECAST_MODELS:
+        raise ValueError(f"model must be one of {FORECAST_MODELS}")
+    backtest = model.select_and_backtest(times, days, d["city_times"])
+    eligible = model.eligible_models(times, days)
+    chosen = (
+        (backtest["selected_model"] if backtest else "bayes")
+        if model_name == "auto"
+        else model_name
+    )
+    note = None
+    if chosen not in eligible:
+        note = f"{chosen} needs at least {ml_forecast.MIN_INCIDENTS} incidents; used bayes"
+        chosen = "bayes"
+    result = model.forecast(times, days, d["city_times"], start, horizon_days, chosen)
+    result["model"].update(requested=model_name, eligible=eligible, note=note)
     spots = Counter(r["intersection_key"] for r in rows if r["intersection_key"])
     n_days = len(days)
     selection = {
         k: v
-        for k, v in {"area": quadrant, "route": route, "direction": direction, "lane": lane,
-                     "category": category, "intersection": intersection}.items()
+        for k, v in {"quadrant": quadrant, "route": route, "direction": direction, "lane": lane,
+                     "category": category, "intersection": intersection, "area": area}.items()
         if v
     }  # fmt: skip
     out = {
@@ -355,7 +397,7 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
         "horizon_days": horizon_days,
         **result,
         "periods": [p[0] for p in model.PERIODS],
-        "backtest": model.backtest(times, days, d["city_times"]),
+        "backtest": backtest,
         "top_intersections": [
             {"key": k, "incidents": v, "expected_in_horizon": round(v / n_days * horizon_days, 2)}
             for k, v in spots.most_common(8)
@@ -367,6 +409,229 @@ def predict(quadrant=ANY, route=ANY, direction=ANY, lane=ANY, category=ANY, inte
     if save:
         out["saved_prediction_id"] = store().save_prediction(origin, selection, out)
     return out
+
+
+# --------------------------------------------------------------- priorities
+PRIORITY_MIN = {"corridor": 10, "intersection": HOTSPOT_MIN}
+RECENT_DAYS = 28  # trend window, and the hold-out window of the ranking check
+TOP_N = 10
+LANE_PRIOR = 10  # pseudo-incidents shrinking a slice's lane-blocking share to the city's
+PRIORITY_SORTS = {
+    "expected": lambda i: -i["expected"],
+    "lane_blocking": lambda i: -i["expected_lane_blocking"],
+    "rising": lambda i: (i["trend"] != "rising", -(i["trend_ratio"] or 0)),
+    "exposure": lambda i: (i["per_10k_daily_vehicles"] is None, -(i["per_10k_daily_vehicles"] or 0)),
+}  # fmt: skip
+PRIORITY_METHOD = (
+    "Each corridor (or intersection) is forecast with the disruption model over the horizon; "
+    "default rank is expected incidents. Expected lane-blocking = expected incidents x the "
+    "slice's lane-blocking share, shrunk toward the citywide share (many records do not "
+    "report lane impact). Recent change compares the slice's share of incidents in the "
+    "last 28 observed days with the citywide share, so citywide shocks such as weather "
+    "cancel out; it is called rising or falling only if an exact binomial test survives a "
+    "10% false-discovery-rate adjustment across all ranked slices. Ranking check: the same "
+    "ranking built only from data before the last 28 days, scored on what then happened."
+)
+
+
+def _spearman(xs, ys):
+    def ranks(v):
+        order = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0.0] * len(v)
+        i = 0
+        while i < len(order):
+            j = i
+            while j + 1 < len(order) and v[order[j + 1]] == v[order[i]]:
+                j += 1
+            for k in range(i, j + 1):
+                r[order[k]] = (i + j) / 2
+            i = j + 1
+        return r
+
+    rx, ry = ranks(xs), ranks(ys)
+    mx, my = sum(rx) / len(rx), sum(ry) / len(ry)
+    cov = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    var = (sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry)) ** 0.5
+    return round(cov / var, 3) if var else None
+
+
+def _ranking_check(groups, city_times, days):
+    """Rank on data before the last RECENT_DAYS observed days; score on those days."""
+    if len(days) < RECENT_DAYS + 56 or len(groups) < TOP_N * 2:
+        return None
+    train, test = days[:-RECENT_DAYS], set(days[-RECENT_DAYS:])
+    train_set = set(train)
+    rows = []
+    for key, times in groups.items():
+        rates = model.fit(times, train, city_times)
+        expected = sum(
+            sum(rates[(d.weekday(), p)] for p in range(len(model.PERIODS))) for d in test
+        )
+        past = sum(1 for t in times if t.date() in train_set)
+        actual = sum(1 for t in times if t.date() in test)
+        rows.append((key, expected, past, actual))
+    total_actual = sum(r[3] for r in rows) or 1
+    actual_top = {r[0] for r in sorted(rows, key=lambda r: -r[3])[:TOP_N]}
+
+    def score(col):
+        top = sorted(rows, key=lambda r: -r[col])[:TOP_N]
+        return {
+            "overlap_with_actual_top": len(actual_top & {r[0] for r in top}),
+            "captured_pct": round(100 * sum(r[3] for r in top) / total_actual, 1),
+        }
+
+    return {
+        "train_days": len(train),
+        "test_start": min(test).isoformat(),
+        "test_end": max(test).isoformat(),
+        "top_n": TOP_N,
+        "forecast": score(1),
+        "past_counts": score(2),
+        "spearman": _spearman([r[1] for r in rows], [r[3] for r in rows]),
+    }
+
+
+def priorities(level="corridor", horizon_days=28, quadrant=ANY, sort="expected", limit=15):
+    """Rank corridors or intersections to study first, with forecast-analysis statistics."""
+    level = "intersection" if level == "intersection" else "corridor"
+    horizon_days = max(1, min(int(horizon_days), MAX_HORIZON_DAYS))
+    sort = sort if sort in PRIORITY_SORTS else "expected"
+    d = _load()
+    # Results depend only on the loaded data and these inputs; sorting happens per request.
+    cache = d.setdefault("_priorities", {})
+    key = (level, horizon_days, quadrant.upper())
+    if key not in cache:
+        cache[key] = _priorities(d, level, horizon_days, quadrant)
+    out = dict(cache[key])
+    out["sort"] = sort
+    out["items"] = sorted(out["items"], key=PRIORITY_SORTS[sort])[: max(1, min(limit, 100))]
+    return out
+
+
+def _priorities(d, level, horizon_days, quadrant):
+    # Local import: intersection_study imports this module.
+    from app.application.intersection_study import fits_arterial_model as fits
+
+    field = "corridor_key" if level == "corridor" else "intersection_key"
+    days, start, city_times = d["observed_days"], d["forecast_start"], d["city_times"]
+    observed = set(days)
+    rows_by = {}
+    for r in d["incidents"]:
+        if r[field] and (not quadrant or r["quadrant"] == quadrant.upper()):
+            rows_by.setdefault(r[field], []).append(r)
+    rows_by = {k: v for k, v in rows_by.items() if len(v) >= PRIORITY_MIN[level]}
+    groups = {k: [model_time(r) for r in v] for k, v in rows_by.items()}
+
+    phi = model.dispersion(city_times, days)
+    recent = set(days[-RECENT_DAYS:])
+    city_n = sum(1 for t in city_times if t.date() in observed)
+    city_recent_share = sum(1 for t in city_times if t.date() in recent) / (city_n or 1)
+    city_lane_share = sum((r["lane_impact_level"] or 0) >= 1 for r in d["incidents"]) / len(
+        d["incidents"]
+    )
+    city_rates = model.fit(city_times, days, city_times)
+    city_lams = model.daily_expected(city_rates, start, horizon_days)
+    city_expected = sum(city_lams)
+    estimates = store().latest_estimates() if level == "intersection" else {}
+
+    items = []
+    for key, rows in rows_by.items():
+        times = groups[key]
+        rates = model.fit(times, days, city_times)
+        lams = model.daily_expected(rates, start, horizon_days)
+        expected = sum(lams)
+        lo, hi = model.nb_interval(expected, model.total_dispersion(lams, phi))
+        n = sum(1 for t in times if t.date() in observed)
+        shift = model.recent_shift(
+            sum(1 for t in times if t.date() in recent), n, city_recent_share
+        )
+        lane_blocking = sum((r["lane_impact_level"] or 0) >= 1 for r in rows)
+        lane_share = (lane_blocking + LANE_PRIOR * city_lane_share) / (len(rows) + LANE_PRIOR)
+        (pw, pp), peak_rate = max(rates.items(), key=lambda kv: kv[1])
+        vols = [r["volume_2024"] for r in rows if r.get("volume_2024")]
+        volume = median(vols) if vols else None
+        spots = Counter(r["intersection_key"] for r in rows if r["intersection_key"])
+        # Busiest hotspot the arterial simulator can represent (freeway interchanges are capped).
+        study_spot = next(
+            (
+                k
+                for k, n in spots.most_common()
+                if n >= HOTSPOT_MIN and fits(d["intersections"][k]["volume_2024"])
+            ),
+            None,
+        )
+        est = estimates.get(key) or {}
+        items.append(
+            {
+                "key": key,
+                "corridor": Counter(r["corridor_key"] for r in rows).most_common(1)[0][0],
+                "quadrants": sorted({r["quadrant"] for r in rows if r["quadrant"]}),
+                "history_incidents": len(rows),
+                "expected": round(expected, 2),
+                "interval_80": [lo, hi],
+                "expected_lane_blocking": round(expected * lane_share, 2),
+                "lane_blocking_pct": round(100 * lane_blocking / len(rows), 1),
+                "lane_impact_reported_pct": round(
+                    100 * sum(r["lane_impact_level"] is not None for r in rows) / len(rows), 1
+                ),
+                "trend": "steady",  # set after the false-discovery-rate adjustment below
+                "trend_direction": shift["direction"],
+                "trend_ratio": shift["ratio"],
+                "trend_p_value": round(shift["p_value"], 4),
+                "peak_window": f"{model.WEEKDAYS[pw]} {model.PERIODS[pp][0]}",
+                "peak_window_share_pct": round(100 * peak_rate / (sum(rates.values()) or 1), 1),
+                "median_volume_2024": volume,
+                "per_10k_daily_vehicles": round(expected / (volume / 10_000), 2) if volume else None,
+                "top_intersections": [k for k, _ in spots.most_common(3)] if level == "corridor" else [],
+                "study_spot": study_spot,
+                "study_spot_incidents": spots[study_spot] if study_spot else 0,
+                "incident_delay_s": est.get("extra_delay_s_per_vehicle"),
+            }
+        )  # fmt: skip
+
+    # Screening dozens of slices at p < 0.05 flags a few by chance; control the FDR.
+    for item, keep in zip(items, model.benjamini_hochberg([i["trend_p_value"] for i in items])):
+        if keep and item["trend_direction"]:
+            item["trend"] = item["trend_direction"]
+    ranked = sorted(items, key=lambda i: -i["expected"])
+    top = ranked[:TOP_N]
+    (cw, cp), _ = max(city_rates.items(), key=lambda kv: kv[1])
+    backtest = model.backtest(city_times, days, city_times)
+    return {
+        "level": level,
+        "horizon_days": horizon_days,
+        "forecast_start": start.isoformat(),
+        "quadrant": quadrant.upper() if quadrant else None,
+        "min_incidents": PRIORITY_MIN[level],
+        "eligible": len(items),
+        "items": items,
+        "analysis": {
+            "citywide_expected": round(city_expected, 1),
+            "citywide_interval_80": list(
+                model.nb_interval(city_expected, model.total_dispersion(city_lams, phi))
+            ),
+            "citywide_peak_window": f"{model.WEEKDAYS[cw]} {model.PERIODS[cp][0]}",
+            "top_n": TOP_N,
+            "top_share_of_citywide_pct": round(
+                100 * sum(i["expected"] for i in top) / (city_expected or 1), 1
+            ),
+            "top_keys": [i["key"] for i in top],
+            "rising": [i["key"] for i in items if i["trend"] == "rising"],
+            "falling": [i["key"] for i in items if i["trend"] == "falling"],
+            "recent_window_days": RECENT_DAYS,
+            "ranking_check": _ranking_check(groups, city_times, days),
+            "calibration": backtest
+            and {
+                "interval_80_coverage_pct": backtest["interval_80_coverage_pct"],
+                "model_daily_mae": backtest["model_daily_mae"],
+                "baseline_daily_mae": backtest["baseline_daily_mae"],
+                "test_days": backtest["test_days"],
+            },
+            "dispersion": round(phi, 4),
+        },
+        "method": PRIORITY_METHOD,
+        "caveat": CAVEAT,
+    }
 
 
 # ------------------------------------------------------------------ history
@@ -543,3 +808,134 @@ def live(force=False):
                 "cache_age_s": round(now - _live["at"]),
             }
         return {**data, "cache_age_s": 0}  # fmt: skip
+
+
+# --------------------------------------------------------------------- ML info
+BENCHMARK_SLICES = [
+    ("All Calgary", {}),
+    ("SE quadrant", {"quadrant": "SE"}),
+    ("NE quadrant", {"quadrant": "NE"}),
+    ("NW quadrant", {"quadrant": "NW"}),
+    ("SW quadrant", {"quadrant": "SW"}),
+    ("Collisions", {"category": "Collision"}),
+    ("Deerfoot Trail", {"route": "Deerfoot Trail"}),
+    ("Stoney Trail", {"route": "Stoney Trail"}),
+    ("Glenmore Trail", {"route": "Glenmore Trail"}),
+    ("Deerfoot Trail SB right lane",
+     {"route": "Deerfoot Trail", "direction": "SB", "lane": "Right lane"}),
+    ("Deerfoot Trail & Glenmore Trail SE", {"intersection": "Deerfoot Trail & Glenmore Trail SE"}),
+]  # fmt: skip
+_benchmark: dict = {"version": None, "data": None}
+
+
+def ml_info():
+    """What the forecasting models are, how they are chosen, and their settings."""
+    from app.domain import forecast as fc
+
+    try:
+        import importlib.metadata as md
+
+        lgb_version = md.version("lightgbm")
+    except Exception:  # noqa: BLE001 - optional dependency
+        lgb_version = None
+    return {
+        "task": "Forecast City-reported incidents per day and time-of-day period for any selection",
+        "models": [
+            {
+                "name": "flat",
+                "label": fc.FlatModel.label,
+                "type": "Baseline",
+                "how": "Average incidents per day over the training days.",
+            },
+            {
+                "name": "bayes",
+                "label": fc.BayesModel.label,
+                "type": "Statistical",
+                "how": "Weekday x period rates from the selection's history, shrunk toward the "
+                f"citywide weekly shape with {fc.PRIOR_WEEKS:g} pseudo-weeks (empirical Bayes).",
+            },
+            {
+                "name": "lightgbm",
+                "label": fc.LightGBMModel.label,
+                "type": "Machine learning",
+                "library": f"LightGBM {lgb_version} (Microsoft, MIT licence), native API",
+                "available": ml_forecast.available(),
+                "how": "Gradient-boosted decision trees with a Poisson objective, trained per "
+                "request on the selection's (day, period) counts.",
+                "params": ml_forecast.PARAMS,
+                "rounds": ml_forecast.NUM_ROUNDS,
+                "features": [
+                    {"name": "weekday", "meaning": "Day of week (categorical)"},
+                    {
+                        "name": "period",
+                        "meaning": "Night / AM peak / Midday / PM peak / Evening (categorical)",
+                    },
+                    {"name": "is_weekend", "meaning": "Saturday or Sunday"},
+                    {
+                        "name": "is_holiday",
+                        "meaning": f"Alberta statutory holiday ({len(ml_forecast.HOLIDAYS)} dates listed)",
+                    },
+                    {"name": "day_index", "meaning": "Days since the window start (trend)"},
+                    {
+                        "name": "city_cell_rate",
+                        "meaning": "Citywide mean count for that weekday x period",
+                    },
+                    {"name": "bayes_rate", "meaning": "The empirical-Bayes rate for that cell"},
+                ],
+                "min_incidents": ml_forecast.MIN_INCIDENTS,
+            },
+        ],
+        "selection": {
+            "validation_days": fc.VALIDATION_DAYS,
+            "validation_folds": fc.VALIDATION_FOLDS,
+            "test_days": fc.TEST_DAYS,
+            "default_model": fc.DEFAULT_MODEL,
+            "rule": f"Use {fc.DEFAULT_MODEL} unless another model has lower daily error by more "
+            f"than {fc.SWITCH_Z:g} standard errors across {fc.VALIDATION_FOLDS} rolling "
+            f"{fc.VALIDATION_FOLD_DAYS}-day validation windows; then report every model on later "
+            "test days that were not used to choose. Picking the lowest validation error "
+            "outright chased noise (scripts/evaluate_model_selection.py).",
+            "metric": "Mean absolute error of the daily incident count (MAE)",
+            "interval": "80% negative-binomial range around the expected count (citywide "
+            "overdispersion; daily counts vary more than Poisson allows)",
+        },
+        "periods": [p[0] for p in fc.PERIODS],
+        "no_external_models": "No Hugging Face, LLM or pretrained weights are used.",
+    }
+
+
+def ml_benchmark():
+    """Three-model comparison on standard selections (cached until data changes)."""
+    d = _load()
+    version = _state["version"]
+    if _benchmark["version"] == version and _benchmark["data"]:
+        return _benchmark["data"]
+    rows = []
+    for label, sel in BENCHMARK_SLICES:
+        p = predict(**sel, horizon_days=7)
+        bt = p["backtest"] or {}
+        rows.append(
+            {
+                "slice": label,
+                "selection": sel,
+                "incidents": p["history"]["incidents"],
+                "selected_model": bt.get("selected_model"),
+                "models": {k: {"validation_mae": v["validation_daily_mae"], "test_mae": v["test_daily_mae"],
+                               "test_coverage_pct": v["test_interval_80_coverage_pct"]}
+                           for k, v in (bt.get("models") or {}).items()},
+                "best_on_test": min((bt.get("models") or {"-": {"test_daily_mae": 0}}).items(),
+                                    key=lambda kv: kv[1]["test_daily_mae"])[0],
+                "forecast_7d": p["expected_total"],
+                "interval_80": p["interval_80"],
+            }
+        )  # fmt: skip
+    wins = Counter(r["best_on_test"] for r in rows)
+    data = {
+        "computed_for_data_version": version,
+        "observed_days": len(d["observed_days"]),
+        "slices": rows,
+        "best_on_test_counts": dict(wins),
+        "selected_counts": dict(Counter(r["selected_model"] for r in rows)),
+    }
+    _benchmark.update(version=version, data=data)
+    return data

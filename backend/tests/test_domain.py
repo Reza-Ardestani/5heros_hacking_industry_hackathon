@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.domain.evaluation import compare, economics, pareto
+from app.domain.evaluation import compare, cost_stress, economics, pareto
 from app.domain.models import Scenario
 from app.infra.simulation import make_demand
 
@@ -81,3 +81,42 @@ def test_fixed_demand_is_repeatable_and_stress_changes_arrivals():
     assert make_demand(scenario, 42) == make_demand(scenario, 42)
     assert make_demand(scenario, 42) != make_demand(scenario, 43)
     assert len(make_demand(scenario, 42, 0.8)) < len(make_demand(scenario, 42, 1.2))
+
+
+def _decided(rows, budget=100000, guardrail=30):
+    for r in rows:
+        r.setdefault("label", r["id"].replace("_", " ").title())
+        r["comparison"] = compare(r, rows[0], budget, guardrail)
+    return rows
+
+
+def test_cost_stress_finds_robust_and_fragile_recommendations():
+    scenario = Scenario(budget_cad=100000, cross_guardrail_pct=30)
+    rows = _decided([
+        row("reference", 1000),
+        row("retime", 700, cost=15000),
+        row("unfair", 300, cross=40, cost=5000),
+        row("capacity", 400, cost=1200000),
+    ])  # fmt: skip
+    robust = cost_stress(rows, "retime", scenario)
+    assert robust["robust_share_pct"] == 100 and robust["verdict"].startswith("Robust")
+    assert robust["headroom"]["cost_increase_pct"] == pytest.approx(566.7)
+    assert robust["headroom"]["fallback_id"] == "reference"
+    assert [s["id"] for s in robust["switch_points"]] == ["capacity"]
+    assert [b["id"] for b in robust["blocked"]] == ["unfair"]  # no cost change can fix it
+    assert robust["economics"]["worst_case_net_cad"] < robust["economics"]["net_annual_value_cad"]
+
+    # A lower-delay option just over budget: +25% budget makes it win.
+    fragile_rows = _decided([
+        row("reference", 1000),
+        row("retime", 700, cost=15000),
+        row("turn_lane", 500, cost=120000),
+    ])  # fmt: skip
+    fragile = cost_stress(fragile_rows, "retime", scenario)
+    assert fragile["robust_share_pct"] < 100
+    assert fragile["switch_points"][0]["budget_increase_pct"] == 20
+    assert fragile["grid"][3][2] == "turn_lane"  # budget +20% (= $120k), costs unchanged
+    assert fragile["grid"][3][3] == "retime"  # ...but not if costs also rise 20%
+    assert fragile["grid"][0][2] == "retime"
+    assert {c["id"] for c in fragile["one_at_a_time"]} == {"turn_lane"}
+    assert "+20%" in fragile["verdict"]

@@ -31,6 +31,30 @@ def test_poisson_interval_brackets_mean():
     assert lo < 10 < hi and forecast.poisson_interval(0) == (0, 0)
 
 
+def test_negative_binomial_interval_widens_with_dispersion():
+    assert forecast.nb_interval(20, 0) == forecast.poisson_interval(20)
+    lo_p, hi_p = forecast.poisson_interval(20)
+    lo, hi = forecast.nb_interval(20, 0.15)  # Var = 20 + 0.15 * 400 = 80, vs 20
+    assert lo < lo_p and hi > hi_p and lo < 20 < hi
+    assert forecast.nb_interval(0, 0.15) == (0, 0)
+    assert forecast.p_at_least_one(2, 0.15) < forecast.p_at_least_one(2, 0)
+
+
+def test_dispersion_separates_steady_from_bursty_history():
+    # Same weekly mean (two per weekday); bursty alternates zero and four.
+    days, steady = _history(140, lambda d: [7, 8] if d.weekday() < 5 else [])
+    _, bursty = _history(
+        140, lambda d: ([7, 8, 9, 10] if (d - days[0]).days % 14 < 7 else []) * (d.weekday() < 5)
+    )
+    assert forecast.dispersion(steady, days) == 0
+    # Weekday mean 2, counts 0 or 4: ((4 - 2)^2 - 2) / 2^2 = 0.5 exactly.
+    assert abs(forecast.dispersion(bursty, days) - 0.5) < 1e-9
+    out = forecast.forecast(bursty, days, bursty, days[-1] + timedelta(1), 7)
+    lo, hi = forecast.poisson_interval(out["expected_total"])
+    assert out["dispersion"] == 0.5
+    assert out["interval_80"][1] - out["interval_80"][0] > hi - lo
+
+
 def test_predict_endpoint_slices_and_intersection_overrides_route():
     client = TestClient(app)
     options = client.get("/api/disruptions/options").json()
@@ -52,3 +76,89 @@ def test_predict_endpoint_slices_and_intersection_overrides_route():
         client.get("/api/disruptions/predict", params={"horizon_days": 99}).json()["horizon_days"]
         == 28
     )
+
+
+def test_recent_shift_cancels_citywide_shocks_and_fdr_controls_screening():
+    # Slice holds 15% of the city's recent-window share; city share is 15%: no change.
+    assert forecast.recent_shift(15, 100, 0.15)["p_value"] > 0.5
+    surge = forecast.recent_shift(40, 100, 0.15)
+    assert surge["direction"] == "rising" and surge["ratio"] > 2 and surge["p_value"] < 1e-6
+    assert forecast.recent_shift(0, 100, 0.15)["direction"] == "falling"
+    # One strong signal among many null p-values survives; borderline ones do not.
+    assert forecast.benjamini_hochberg([1e-6] + [0.04] * 3 + [0.5] * 96) == [True] + [False] * 99
+
+
+def test_priorities_rank_corridors_with_checked_forecast_statistics():
+    client = TestClient(app)
+    r = client.get("/api/disruptions/priorities", params={"horizon_days": 14}).json()
+    items, a = r["items"], r["analysis"]
+    assert r["level"] == "corridor" and r["horizon_days"] == 14 and 0 < len(items) <= 15
+    assert [i["expected"] for i in items] == sorted((i["expected"] for i in items), reverse=True)
+    for i in items:
+        assert i["interval_80"][0] <= i["expected"] <= i["interval_80"][1]
+        assert i["history_incidents"] >= r["min_incidents"]
+        assert 0 <= i["expected_lane_blocking"] <= i["expected"]
+        assert i["trend"] in {"rising", "falling", "steady"}
+    assert not set(a["rising"]) & set(a["falling"])
+    assert 0 < a["top_share_of_citywide_pct"] < 100
+    check = a["ranking_check"]
+    assert check and 0 <= check["forecast"]["overlap_with_actual_top"] <= check["top_n"]
+    lane = client.get("/api/disruptions/priorities", params={"sort": "lane_blocking"}).json()
+    values = [i["expected_lane_blocking"] for i in lane["items"]]
+    assert values == sorted(values, reverse=True)
+    spots = client.get("/api/disruptions/priorities", params={"level": "intersection"}).json()
+    assert spots["level"] == "intersection" and all(" & " in i["key"] for i in spots["items"])
+    assert all(i["corridor"] for i in spots["items"])
+
+
+def test_priority_study_spot_is_a_hotspot_the_arterial_model_can_represent():
+    client = TestClient(app)
+    items = client.get("/api/disruptions/priorities", params={"limit": 100}).json()["items"]
+    with_spot = [i for i in items if i["study_spot"]]
+    assert with_spot and len(with_spot) < len(items)  # freeway-only corridors get none
+    for i in with_spot[:5]:
+        assert i["study_spot_incidents"] >= 5
+        study = client.get(
+            "/api/disruptions/intersection/study", params={"key": i["study_spot"]}
+        ).json()
+        assert not any("exceeds the synthetic arterial" in w for w in study["warnings"])
+
+
+def test_lightgbm_is_selected_on_validation_when_it_captures_a_trend():
+    # Incidents rise steadily over 200 days; weekday x period rates average the whole
+    # window, while LightGBM's day_index feature tracks the recent level.
+    days, times = _history(200, lambda d: [8] * (1 + (d - date(2026, 4, 1)).days // 25))
+    bt = forecast.select_and_backtest(times, days, times)
+    models = bt["models"]
+    assert set(models) == {"flat", "bayes", "lightgbm"}
+    assert bt["selected_model"] == "lightgbm"
+    assert models["lightgbm"]["test_daily_mae"] < models["bayes"]["test_daily_mae"]
+    assert bt["validation_end"] < bt["test_start"]  # choice made before the test window
+    out = forecast.forecast(times, days, times, days[-1] + timedelta(1), 7, "lightgbm")
+    assert out["model"]["name"] == "lightgbm" and len(out["days"]) == 7
+
+
+def test_sparse_slices_fall_back_from_lightgbm():
+    days, times = _history(140, lambda d: [8] if d.day == 1 else [])
+    assert "lightgbm" not in forecast.eligible_models(times, days)
+    bt = forecast.select_and_backtest(times, days, times)
+    assert bt["not_eligible"] == ["lightgbm"] and bt["selected_model"] in ("flat", "bayes")
+
+
+def test_model_choice_needs_consistent_evidence_to_leave_bayes():
+    # Flat has the lower mean error, but the gap swings -3 / +2.8 day to day: not evidence.
+    noisy = {"bayes": [3.0, 1.0] * 28, "flat": [0.0, 3.8] * 28}
+    assert forecast.choose_model(noisy)[0] == "bayes"
+    steady = {"bayes": [2.0, 2.2] * 28, "lightgbm": [1.5, 1.8] * 28, "flat": [2.5, 2.6] * 28}
+    chosen, evidence = forecast.choose_model(steady)
+    assert chosen == "lightgbm" and evidence["challenger"] == "lightgbm"
+    assert evidence["z"] > evidence["threshold_z"]
+    assert forecast.choose_model({"bayes": [1.0] * 10})[0] == "bayes"
+
+
+def test_selection_uses_rolling_windows_before_the_test_window():
+    days, times = _history(184, lambda d: [7, 8] if d.weekday() < 5 else [17])
+    bt = forecast.select_and_backtest(times, days, times)
+    assert bt["validation_folds"] == forecast.VALIDATION_FOLDS
+    assert bt["validation_end"] < bt["test_start"]
+    assert bt["selection_evidence"]["threshold_z"] == forecast.SWITCH_Z

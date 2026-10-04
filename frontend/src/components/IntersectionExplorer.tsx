@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 
 import type {
+  AreaFocus,
+  ExplorerCommand,
   IncidentEstimate,
   IntersectionStudy,
   DisruptionSummary,
@@ -23,7 +25,9 @@ import type {
 import { request } from "../lib/api";
 import { number } from "../lib/format";
 import { IncidentDelayCard } from "./IncidentDelayCard";
+import { McpInfoMl } from "./McpInfoMl";
 import { PredictionPanel, emptySelection, type Selection } from "./PredictionPanel";
+import { PriorityPanel } from "./PriorityPanel";
 
 const LIVE_REFRESH_MS = 60_000;
 // Calgary city-limit bounding box used to place points on the overview map.
@@ -117,8 +121,10 @@ function Columns({
 
 export function IntersectionExplorer({
   onStudy,
+  command,
 }: {
   onStudy?: (study: IntersectionStudy) => void;
+  command?: ExplorerCommand | null;
 }) {
   const [summary, setSummary] = useState<DisruptionSummary | null>(null),
     [mapPoints, setMapPoints] = useState<Intersection[]>([]),
@@ -131,7 +137,11 @@ export function IntersectionExplorer({
     [sort, setSort] = useState("incidents"),
     [error, setError] = useState(""),
     [liveBusy, setLiveBusy] = useState(false),
-    [camTick, setCamTick] = useState(Date.now());
+    [camTick, setCamTick] = useState(Date.now()),
+    [area, setArea] = useState<AreaFocus | null>(null),
+    [radius, setRadius] = useState(1000),
+    [tab, setTab] = useState<"detail" | "mcp-info-ml">("detail");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [prediction, setPrediction] = useState<Selection>(emptySelection),
     predictRef = useRef<HTMLDivElement>(null);
   const predictIntersection = (d: IntersectionDetail) => {
@@ -150,6 +160,59 @@ export function IntersectionExplorer({
     scrollOnLoad.current = true;
     setSelected(key);
   };
+  // Map click: filter the list, prediction and mcp-info-ml tab to an area around the dot.
+  const focusArea = (f: AreaFocus, r = radius) => {
+    setArea(f);
+    setPrediction({
+      ...emptySelection,
+      lat: f.lat,
+      lon: f.lon,
+      radius_m: r,
+      area_label: f.label,
+    });
+    if (f.key) focus(f.key);
+    else {
+      setTab("mcp-info-ml");
+      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  const changeRadius = (r: number) => {
+    setRadius(r);
+    if (area) setPrediction((p) => ({ ...p, radius_m: r }));
+  };
+  const clearArea = () => {
+    setArea(null);
+    setPrediction(emptySelection);
+  };
+
+  // Chat commands: filter, open an intersection, an area, a tab or a prediction.
+  useEffect(() => {
+    if (!command) return;
+    if (command.quadrant !== undefined) setQuadrant(command.quadrant);
+    if (command.area)
+      focusArea(
+        {
+          lat: command.area.lat,
+          lon: command.area.lon,
+          label: command.area.label ?? "Area from chat",
+          kind: "hotspot",
+        },
+        command.area.radius_m ?? radius,
+      );
+    if (command.prediction) {
+      setPrediction({ ...emptySelection, ...command.prediction } as Selection);
+      if (command.intersection) setSelected(command.intersection);
+      predictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (command.intersection) {
+      setTab(command.tab ?? "detail");
+      focus(command.intersection);
+    }
+    if (command.tab && !command.intersection) {
+      setTab(command.tab);
+      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // Re-apply only when a new command arrives.
+  }, [command?.nonce]);
 
   useEffect(() => {
     request<DisruptionSummary>("/api/disruptions/summary")
@@ -165,6 +228,11 @@ export function IntersectionExplorer({
 
   useEffect(() => {
     const params = new URLSearchParams({ q: query, quadrant, sort, limit: "40" });
+    if (area) {
+      params.set("lat", String(area.lat));
+      params.set("lon", String(area.lon));
+      params.set("radius_m", String(radius));
+    }
     const timer = setTimeout(
       () =>
         request<{ total: number; items: Intersection[] }>(
@@ -175,7 +243,7 @@ export function IntersectionExplorer({
       200,
     );
     return () => clearTimeout(timer);
-  }, [query, quadrant, sort]);
+  }, [query, quadrant, sort, area, radius]);
 
   useEffect(() => {
     if (!selected) return;
@@ -315,6 +383,20 @@ export function IntersectionExplorer({
         </div>
       </section>
 
+      <PriorityPanel
+        onForecast={(level, item, horizonDays) => {
+          setPrediction({
+            ...emptySelection,
+            route: item.corridor,
+            intersection: level === "intersection" ? item.key : "",
+            horizon_days: horizonDays,
+          });
+          predictRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        onOpenIntersection={focus}
+        onStudy={onStudy}
+      />
+
       <div ref={predictRef}>
         <PredictionPanel
           selection={prediction}
@@ -346,6 +428,30 @@ export function IntersectionExplorer({
             <h2>Intersections</h2>
             <span className="helper">{list ? `${number(list.total)} match` : ""}</span>
           </div>
+          {area && (
+            <div className="ix-area-chip">
+              <MapPin size={13} />
+              <span>
+                Area: within{" "}
+                <select
+                  value={radius}
+                  onChange={(e) => changeRadius(+e.target.value)}
+                  aria-label="Area radius"
+                >
+                  {[500, 1000, 2000].map((r) => (
+                    <option key={r} value={r}>
+                      {r / 1000} km
+                    </option>
+                  ))}
+                </select>{" "}
+                of {area.kind === "live" ? "live incident at " : ""}
+                {area.label}
+              </span>
+              <button className="text-link" onClick={clearArea}>
+                clear
+              </button>
+            </div>
+          )}
           <div className="ix-filters">
             <label className="ix-search">
               <Search size={15} />
@@ -414,7 +520,7 @@ export function IntersectionExplorer({
         <section className="panel ix-map">
           <div className="panel-heading">
             <h2>Where disruptions recur</h2>
-            <span className="helper">Top 200 · dot area = incidents</span>
+            <span className="helper">Top 200 · dot area = incidents · click a dot to focus</span>
           </div>
           <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} role="img" aria-label="Calgary incident hotspot map">
             <rect width={MAP_W} height={MAP_H} rx={8} className="ix-map-bg" />
@@ -431,6 +537,20 @@ export function IntersectionExplorer({
                 </g>
               );
             })()}
+            {area &&
+              (() => {
+                const c = project(area.lat, area.lon);
+                const mPerDegLon = 111320 * Math.cos((area.lat * Math.PI) / 180);
+                return (
+                  <ellipse
+                    className="ix-area-ring"
+                    cx={c.x}
+                    cy={c.y}
+                    rx={(radius / mPerDegLon / (BOX.east - BOX.west)) * MAP_W}
+                    ry={(radius / 110540 / (BOX.north - BOX.south)) * MAP_H}
+                  />
+                );
+              })()}
             {mapPoints.map((p) => {
               const { x, y } = project(p.latitude, p.longitude);
               return (
@@ -440,7 +560,15 @@ export function IntersectionExplorer({
                   cy={y}
                   r={2 + 9 * Math.sqrt(p.incidents / mapMax)}
                   className={`ix-dot ${p.key === selected ? "selected" : ""}`}
-                  onClick={() => focus(p.key)}
+                  onClick={() =>
+                    focusArea({
+                      lat: p.latitude,
+                      lon: p.longitude,
+                      label: p.key,
+                      key: p.key,
+                      kind: "hotspot",
+                    })
+                  }
                 >
                   <title>{`${p.key}: ${p.incidents} incidents`}</title>
                 </circle>
@@ -450,7 +578,19 @@ export function IntersectionExplorer({
               if (i.latitude == null || i.longitude == null) return null;
               const { x, y } = project(i.latitude, i.longitude);
               return (
-                <g key={`live-${n}`} className="ix-live-dot">
+                <g
+                  key={`live-${n}`}
+                  className="ix-live-dot"
+                  onClick={() =>
+                    focusArea({
+                      lat: i.latitude!,
+                      lon: i.longitude!,
+                      label: i.location_text,
+                      key: i.hotspot?.key,
+                      kind: "live",
+                    })
+                  }
+                >
                   <circle cx={x} cy={y} r={9} className="pulse" />
                   <circle cx={x} cy={y} r={4.5} />
                   <title>{`LIVE: ${i.location_text} — ${i.description}`}</title>
@@ -469,7 +609,23 @@ export function IntersectionExplorer({
         </section>
       </div>
 
-      {detail && (
+      <div className="ix-tabs" ref={tabsRef}>
+        <button className={tab === "detail" ? "active" : ""} onClick={() => setTab("detail")}>
+          Intersection detail
+        </button>
+        <button
+          className={tab === "mcp-info-ml" ? "active" : ""}
+          onClick={() => setTab("mcp-info-ml")}
+        >
+          mcp-info-ml{area ? ` · ${area.label}` : ""}
+        </button>
+      </div>
+      {tab === "mcp-info-ml" && (
+        <section className="panel">
+          <McpInfoMl focus={area} radius={radius} />
+        </section>
+      )}
+      {tab === "detail" && detail && (
         <section className="panel ix-detail" ref={detailRef}>
           <div className="ix-detail-head">
             <div>

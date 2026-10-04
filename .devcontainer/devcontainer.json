@@ -1,0 +1,24 @@
+{
+  // GitHub Codespaces (free tier, no card): the app starts by itself on port 8080.
+  // Switch branch any time from the terminal: bb-start <branch>
+  "name": "Bottleneck Busters",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "forwardPorts": [8080, 8000],
+  "portsAttributes": {
+    "8080": { "label": "App: UI + API (password)", "onAutoForward": "notify" },
+    "8000": { "label": "MCP server", "onAutoForward": "silent" }
+  },
+  // bb-start lives outside the repo, so it keeps working after switching to a branch
+  // that has no .devcontainer folder.
+  "postCreateCommand": "pip install --user --quiet uv && install -D -m 755 .devcontainer/bb-start.sh \"$HOME/.local/bin/bb-start\"",
+  "postStartCommand": "\"$HOME/.local/bin/bb-start\"",
+  "secrets": {
+    "BB_AUTH_PASSWORD": {
+      "description": "Demo site password (username: bottleneck). Leave empty to have one generated."
+    }
+  }
+}

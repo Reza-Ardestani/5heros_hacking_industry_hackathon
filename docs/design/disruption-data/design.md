@@ -118,6 +118,47 @@ by this build):
 {"mcpServers": {"calgary-disruptions": {"command": "uv", "args": ["run", "--directory", "backend", "--group", "mcp", "python", "-m", "app.mcp_server"]}}}
 ```
 
+## Using the MCP server locally
+
+1. Start it: `make mcp-http` serves `http://127.0.0.1:8000/mcp` (stateless streamable HTTP).
+2. Connect a client:
+   - Example client: `cd backend && uv run --group mcp python ../scripts/mcp_client_demo.py`
+   - Claude Code: `claude mcp add --transport http calgary-disruptions http://127.0.0.1:8000/mcp`
+   - MCP Inspector (browser UI): `npx @modelcontextprotocol/inspector`, transport
+     "Streamable HTTP", URL `http://127.0.0.1:8000/mcp`
+   - Raw HTTP: POST JSON-RPC (`initialize`, `tools/list`, `tools/call`) with headers
+     `Content-Type: application/json` and `Accept: application/json, text/event-stream`.
+3. stdio instead of HTTP (no server to keep running): `make mcp`.
+4. Self-description: `GET http://127.0.0.1:8000/mcp-info` lists every tool with its
+   arguments and access; `?check=true` runs the 10 safe tools as a live self-test (the 4
+   that write, call SUMO or the City API are listed as not run, with the reason). The app
+   API mirrors it at `/api/mcp-info` and reports whether the server is reachable.
+5. UI: Intersections → click any map dot (red = live) to focus an area (0.5/1/2 km); the
+   list and prediction filter to it and the `mcp-info-ml` tab shows the three-model
+   comparison, per-model predictions, LightGBM feature importance, the benchmark and the
+   MCP status for that area (`/api/ml-info`, `/api/ml/benchmark`, `lat/lon/radius_m`).
+
+## Chat dock (`backend/app/application/assistant.py`)
+
+The UI's chat calls `POST /api/chat` {message, history}. The API builds the MCP server
+in-process and calls its tools directly (`FastMCP.call_tool`), so the chat sees exactly
+what an external agent sees. Replies are {reply, actions, tools_used, mode}; the UI
+executes the actions:
+
+| Action | Effect in the UI |
+|---|---|
+| `navigate` view=problem/study/compare/evidence, step | Opens that page or guided step |
+| `navigate` view=intersections + intersection / quadrant / tab | Filters the list, opens the detail or the `mcp-info-ml` tab |
+| `navigate` view=intersections + prediction | Fills and runs the prediction panel |
+| `study` intersection | Builds the study (`build_intersection_study`) and opens step 2 |
+
+Built-in mode (default) recognises pages, intersections (both road names), routes,
+quadrants, horizons ("14 days", "tomorrow", "month"), models and "collisions". Claude mode
+(`ANTHROPIC_API_KEY` set) gives Claude the MCP tool schemas plus `navigate_ui`, runs a
+manual tool loop (at most six rounds) with server-side fallbacks, and falls back to
+built-in on any error. Chat is read-only: forecasts are not saved and
+`collect_latest_data` is withheld.
+
 ## Hooking into Amazon Bedrock AgentCore
 
 AgentCore Runtime's MCP contract: an ARM64 container serving stateless streamable HTTP

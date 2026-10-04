@@ -13,7 +13,14 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, datetime
 
-from app.domain.evaluation import aggregate, compare, economics, explain_decision, pareto
+from app.domain.evaluation import (
+    aggregate,
+    compare,
+    cost_stress,
+    economics,
+    explain_decision,
+    pareto,
+)
 from app.domain.models import Intervention, Scenario, bounded_share
 
 HOLDOUT_WORKERS = max(1, min(4, (os.cpu_count() or 2) - 1))
@@ -363,6 +370,7 @@ class PlanningService:
             "incident_impact": incident_impact,
             "stress_tests": stress,
             "stress_passed": stress_passed,
+            "cost_stress": cost_stress(rows, best["id"], scenario),
             "claim": "Modeled comparative evidence; no calibrated Calgary field-effect claim",
             "limitations": limitations,
         }

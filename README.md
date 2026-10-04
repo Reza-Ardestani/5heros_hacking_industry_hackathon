@@ -16,7 +16,37 @@ queues/travel times are required before any field-benefit claim.
 
 Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 20.19+ or 22+,
 macOS/Linux/Windows supported by the SUMO wheel. Native SUMO was verified on macOS
-arm64; other systems remain untested. Initial setup downloads SUMO and its data.
+arm64 and Windows 11 (x64); other systems remain untested. Initial setup downloads SUMO
+and its data.
+
+**One command, any OS (Windows included, no `make` needed)** — starts the API, the UI and
+the MCP server, installing dependencies on first run:
+
+```sh
+python scripts/dev.py
+```
+
+| What | URL |
+|---|---|
+| UI | http://localhost:5173 |
+| API docs | http://127.0.0.1:8008/docs |
+| MCP endpoint (streamable HTTP, stateless) | http://127.0.0.1:8000/mcp |
+| MCP self-description | http://127.0.0.1:8000/mcp-info (`?check=true` runs a live self-test) |
+| Same, via the API (used by the UI's `mcp-info-ml` tab) | http://127.0.0.1:8008/api/mcp-info |
+| Chat (the dock at the bottom right of the UI) | `POST http://127.0.0.1:8008/api/chat` |
+
+The chat answers with the same MCP tools and moves the UI ("top 5 hotspots in SE",
+"forecast Stoney Trail next 14 days", "simulate Glenmore Trail & Macleod Trail", "go to
+evidence"). It runs without any key. Optional: set `ANTHROPIC_API_KEY` in the API's
+environment for free-form questions answered by Claude (`claude-opus-5-5`) using the
+same tools; `BB_CHAT_MODE=builtin` turns that off. Never commit the key.
+
+`python scripts/dev.py --check` starts everything, verifies the UI, API, MCP protocol and
+`mcp-info`, then stops (exit code 1 on any failure). Ports in use? Add
+`--api-port 8108 --web-port 5273 --mcp-port 8100`. Connect Claude Code to the MCP server
+with `claude mcp add --transport http calgary-disruptions http://127.0.0.1:8000/mcp`.
+
+Or, with `make`, step by step:
 
 ```sh
 cd /path/to/5heros_hacking_industry_hackathon
@@ -60,6 +90,16 @@ A fresh checkout seeds its database from the committed `data/analysis` exports.
 Build output is frontend-only; `make web` uses Vite's `/api` proxy. For deployment,
 `app.deploy:app` serves the API and built frontend together (see below).
 
+## Free demo in GitHub Codespaces (no card)
+
+On GitHub: **Code → Codespaces → Create codespace on this branch**. The
+[devcontainer](.devcontainer/devcontainer.json) installs everything and starts the app on
+port 8080 (UI + API behind a shared password, user `bottleneck`; set the
+`BB_AUTH_PASSWORD` Codespaces secret, or one is generated and printed). The MCP server
+runs on port 8000. To share: Ports tab → right-click 8080 → Port Visibility → Public.
+Switch branch from the terminal with `bb-start <branch>` (any branch with
+`backend/app/deploy.py`). Free accounts get 120 core-hours a month; idle codespaces stop.
+
 ## Deploy (Google Cloud Run)
 
 One container ([Dockerfile](Dockerfile)) serves the API and built frontend behind a
@@ -83,6 +123,7 @@ instance because jobs are in memory, and scales to zero when idle.
 - Three paired evaluation seeds, ±20% sensitivity checks, full trip accounting.
 - SUMO vehicle-position playback, agent trace, cost/delay frontier, rejection reasons.
 - Exportable JSON report with inputs, hashes, per-seed metrics, assumptions and sources.
+- Chat dock that answers with the MCP tools and navigates pages, intersections and forecasts.
 
 In the recorded default experiment, revision reduced total modeled delay by
 27.17%, with cross-street mean delay up 14.80% within a 30% guardrail. The $15,000

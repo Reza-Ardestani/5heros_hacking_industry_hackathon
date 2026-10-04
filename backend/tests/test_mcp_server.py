@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-mcp = pytest.importorskip("mcp", reason="install with: uv sync --group mcp")
+mcp = pytest.importorskip("mcp", reason="install with: uv sync")
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
@@ -13,7 +13,7 @@ EXPECTED = {
     "get_intersection_details", "predict_disruptions", "query_incident_history",
     "get_travel_time_history", "get_live_disruptions", "get_data_status", "collect_latest_data",
     "build_intersection_study", "estimate_incident_delay", "list_simulation_runs",
-    "get_simulation_run",
+    "get_simulation_run", "rank_priorities",
 }  # fmt: skip
 
 
@@ -61,7 +61,27 @@ async def test_tools_are_listed_and_callable(seeded_store):
         runs = _payload(await client.call_tool("list_simulation_runs", {}))
         assert isinstance(runs["runs"], list)
 
+        assert tools["rank_priorities"].annotations.readOnlyHint is True
+        ranked = _payload(await client.call_tool("rank_priorities", {"limit": 3}))
+        assert ranked["level"] == "corridor" and len(ranked["items"]) == 3
+        assert ranked["analysis"]["ranking_check"] and "study_spot" in ranked["items"][0]
+
 
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+@pytest.mark.anyio
+async def test_mcp_info_describes_every_tool_and_self_checks_safe_ones(seeded_store):
+    from app.mcp_server import NOT_SELF_CHECKED, describe
+
+    server = build_server(port=8000, stateless=True)
+    info = await describe(server, check=True)
+    names = {t["name"] for t in info["tools"]}
+    assert names == EXPECTED and info["summary"]["tools"] == len(EXPECTED)
+    assert info["endpoint"]["path"] == "/mcp" and info["endpoint"]["agentcore_compatible"]
+    assert info["summary"]["self_check_errors"] == 0
+    statuses = {t["name"]: t["self_check"]["status"] for t in info["tools"]}
+    assert all(statuses[n] == "not_run" for n in NOT_SELF_CHECKED)
+    assert sum(s == "ok" for s in statuses.values()) == info["summary"]["self_check_ok"] == 11

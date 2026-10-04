@@ -7,8 +7,35 @@ problem/modeling, separate backend/frontend, incident snapshot, SUMO scenario,
 cost-aware constrained revision loop, comparison/export, local verification.
 User authorized October 3. External organizer validation unverified.
 
+## Phase 2 — Calgary disruption context (done October 3)
+
+[Spec](../specs/features/phase-2-disruption-context/requirements.md): six months of City
+open data in SQLite with a collector, Intersections view with live feed, area/route/lane
+forecasts (flat baseline, Bayesian rates, LightGBM chosen on validation days), MCP server
+with `/mcp-info` self-description and self-check.
+
+## Phase 3 — intersection studies (done October 3)
+
+[Spec](../specs/features/phase-3-intersection-studies/requirements.md): explainable
+decisions, every study logged to database tables, incident-aware SUMO, signal /
+clearance / turn-bay / turn-ban options weighted by observed incident frequency,
+seconds of delay per incident, evidence summary, click-a-dot area focus and the
+`mcp-info-ml` tab.
+
+## Phase 4 — chat assistant (done October 3)
+
+[Spec](../specs/features/phase-4-chat-assistant/requirements.md): bottom chat dock that
+answers with the MCP tools and moves the UI (pages, intersections, quadrant, prediction
+panel, `mcp-info-ml`, intersection studies); built-in by default, Claude optional.
+
 ## Later
 
+Measured CalTRACS profile/calibration and clearance times; inspected OSM network/signal
+mappings; redirect-to-parallel-route option; evaluate Chronos-2 as a fourth forecaster in
+the same validation/test harness; overdispersed forecast ranges; managed database and
+scheduled collector for cloud use; AgentCore image build and deployment with inbound auth;
+surrogate optimization; durable jobs; consultant pilot. RL only after a calibrated
+training/evaluation environment.
 User-requested [resource evidence draft](../specs/features/phase-4-resource-evidence/requirements.md):
 dated labor/material/equipment availability and costs inform conditional intervention
 eligibility. Provider access, resource requirements and engineering gates remain open.

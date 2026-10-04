@@ -181,6 +181,44 @@ export type Result = {
     demand_factor: number;
     comparison: { feasible: boolean; delay_reduction_pct: number };
   }[];
+  cost_stress?: CostStress;
+};
+export type CostStress = {
+  recommended_id: string;
+  cost_factors: number[];
+  budget_factors: number[];
+  grid: string[][];
+  robust_share_pct: number;
+  verdict: string;
+  headroom: {
+    cost_increase_pct: number;
+    min_budget_cad: number;
+    fallback_id: string;
+    fallback: string;
+  } | null;
+  switch_points: {
+    id: string;
+    label: string;
+    needed_budget_cad: number;
+    budget_increase_pct: number;
+    cost_cut_pct: number;
+  }[];
+  blocked: { id: string; label: string; reason: string }[];
+  one_at_a_time: {
+    id: string;
+    label: string;
+    factor: number;
+    winner_id: string;
+    winner: string;
+  }[];
+  economics: {
+    net_annual_value_cad: number;
+    worst_case_net_cad: number;
+    worst_case: string;
+    break_even_value_of_time_cad: number;
+    value_of_time_cad: number;
+  } | null;
+  method: string;
 };
 export type Job = {
   id: string;
@@ -308,6 +346,7 @@ export type LiveFeed = {
   }[];
   active_closures_at_hotspots: number;
 };
+export type ForecastModel = "flat" | "bayes" | "lightgbm";
 export type Option = { value: string; incidents: number };
 export type PredictOptions = {
   quadrants: Option[];
@@ -352,9 +391,180 @@ export type Prediction = {
     baseline_daily_mae: number;
     improvement_vs_baseline_pct: number | null;
     interval_80_coverage_pct: number;
+    selected_model?: ForecastModel;
+    selected_label?: string;
+    selection_rule?: string;
+    validation_start?: string;
+    validation_end?: string;
+    not_eligible?: ForecastModel[];
+    models?: Record<
+      string,
+      {
+        label: string;
+        validation_daily_mae: number;
+        test_daily_mae: number;
+        test_interval_80_coverage_pct: number;
+        test_expected: number;
+      }
+    >;
   } | null;
+  model?: {
+    name: ForecastModel;
+    label: string;
+    requested: string;
+    eligible: ForecastModel[];
+    note: string | null;
+    feature_importance: Record<string, number> | null;
+  };
   top_intersections: { key: string; incidents: number; expected_in_horizon: number }[];
   low_data: boolean;
   method: string;
   caveat: string;
+};
+
+export type PriorityItem = {
+  key: string;
+  corridor: string;
+  quadrants: string[];
+  history_incidents: number;
+  expected: number;
+  interval_80: [number, number];
+  expected_lane_blocking: number;
+  lane_blocking_pct: number;
+  lane_impact_reported_pct: number;
+  trend: "rising" | "falling" | "steady";
+  trend_direction: "rising" | "falling" | null;
+  trend_ratio: number | null;
+  trend_p_value: number;
+  peak_window: string;
+  peak_window_share_pct: number;
+  median_volume_2024: number | null;
+  per_10k_daily_vehicles: number | null;
+  top_intersections: string[];
+  study_spot: string | null;
+  study_spot_incidents: number;
+  incident_delay_s: number | null;
+};
+type RankScore = { overlap_with_actual_top: number; captured_pct: number };
+export type Priorities = {
+  level: "corridor" | "intersection";
+  horizon_days: number;
+  forecast_start: string;
+  quadrant: string | null;
+  sort: string;
+  min_incidents: number;
+  eligible: number;
+  items: PriorityItem[];
+  analysis: {
+    citywide_expected: number;
+    citywide_interval_80: [number, number];
+    citywide_peak_window: string;
+    top_n: number;
+    top_share_of_citywide_pct: number;
+    top_keys: string[];
+    rising: string[];
+    falling: string[];
+    recent_window_days: number;
+    ranking_check: {
+      train_days: number;
+      test_start: string;
+      test_end: string;
+      top_n: number;
+      forecast: RankScore;
+      past_counts: RankScore;
+      spearman: number | null;
+    } | null;
+    calibration: {
+      interval_80_coverage_pct: number;
+      model_daily_mae: number;
+      baseline_daily_mae: number;
+      test_days: number;
+    } | null;
+    dispersion: number;
+  };
+  method: string;
+  caveat: string;
+};
+
+export type AreaFocus = {
+  lat: number;
+  lon: number;
+  label: string;
+  key?: string;
+  kind: "hotspot" | "live";
+};
+export type McpTool = {
+  name: string;
+  description: string;
+  read_only: boolean;
+  arguments: Record<string, { default: unknown; description?: string }>;
+  self_check?: { status: "ok" | "error" | "not_run"; ms?: number; reason?: string; error?: string };
+};
+export type McpInfo = {
+  reachable: boolean;
+  probed_url: string;
+  error?: string;
+  how_to_start?: string;
+  server?: { name: string; sdk: string };
+  endpoint?: { path: string; transport: string; host: string; port: number; agentcore_compatible: boolean };
+  tools?: McpTool[];
+  summary?: Record<string, number>;
+  connect?: Record<string, string>;
+};
+export type MlInfo = {
+  task: string;
+  models: {
+    name: string;
+    label: string;
+    type: string;
+    how: string;
+    library?: string;
+    available?: boolean;
+    params?: Record<string, unknown>;
+    rounds?: number;
+    features?: { name: string; meaning: string }[];
+    min_incidents?: number;
+  }[];
+  selection: { validation_days: number; test_days: number; rule: string; metric: string; interval: string };
+  no_external_models: string;
+};
+export type MlBenchmark = {
+  observed_days: number;
+  slices: {
+    slice: string;
+    incidents: number;
+    selected_model: string | null;
+    best_on_test: string;
+    models: Record<string, { validation_mae: number; test_mae: number; test_coverage_pct: number }>;
+    forecast_7d: number;
+    interval_80: [number, number];
+  }[];
+  best_on_test_counts: Record<string, number>;
+  selected_counts: Record<string, number>;
+};
+// Chat dock: replies from POST /api/chat and the UI actions they carry.
+export type ChatArea = { lat: number; lon: number; radius_m?: number; label?: string };
+export type ChatAction =
+  | {
+      type: "navigate";
+      view: View;
+      step?: number;
+      intersection?: string;
+      quadrant?: string;
+      tab?: "detail" | "mcp-info-ml";
+      prediction?: Record<string, string | number | null>;
+      area?: ChatArea;
+    }
+  | { type: "study"; intersection: string };
+export type ChatReply = {
+  reply: string;
+  actions: ChatAction[];
+  tools_used: string[];
+  mode: "builtin" | "claude";
+  suggestions: string[];
+  notice?: string;
+};
+// A one-shot instruction to the intersection explorer; nonce makes repeats re-apply.
+export type ExplorerCommand = Omit<Extract<ChatAction, { type: "navigate" }>, "type" | "view" | "step"> & {
+  nonce: number;
 };

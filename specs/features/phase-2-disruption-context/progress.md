@@ -49,8 +49,29 @@ remaining pair is a true duplicate 25 m apart).
 
 ## Open
 
-- Overdispersion: replace Poisson range with negative-binomial or empirical range.
+- Overdispersion: done. Negative-binomial ranges with citywide dispersion and prior_weeks=16, chosen by `scripts/evaluate_forecast.py` (3 x 28-day rolling folds, 56 slices). Citywide 80% weekly range coverage 58% -> 83%.
+- Priority ranking: done. `GET /api/disruptions/priorities` and the "Where to focus next" panel (Intersections tab). Hold-out check (rank before Sep 4, score Sep 4-Oct 2): corridors 8/10 of actual top 10, Spearman 0.68; intersections Spearman 0.14, so the UI warns against ranking single intersections. Recent-change flags use a 10% FDR; none currently significant.
+- Model selection: Bayes unless another model is better by >2 standard errors over 4 rolling 14-day validation windows (`scripts/evaluate_model_selection.py`, 56 slices x 3 test windows). Mean regret vs the best model 3.1% -> 2.0%; worst-model picks 69 -> 43 of 168. Glenmore Trail now Bayes (test MAE 0.87) instead of LightGBM (1.00).
+- Cost & budget stress test: every run reports `cost_stress` (5x5 grid of costs and budget at -50%, -20%, 0, +20%, +50%, cost headroom, budget switch points, one-at-a-time costs, payback under costs +50% / value of time -50%), shown on the Recommendation page. Default demo: robust 25/25. Chaparral Blvd & Stoney Trail study: incident clearance holds 23/25 but has negative net value (-$4,743/yr; needs $62/h value of time), now flagged in the UI.
 - Run the collector on a schedule (Task Scheduler/cron) to build history; not configured.
 - Build/push the MCP image and create the AgentCore Runtime; add inbound auth.
 - Durable dynamic data in the cloud needs a managed database behind `Store`.
 - Measured CalTRACS counts still required before simulating a chosen corridor.
+
+## ML forecaster (later October 3)
+
+LightGBM (native API, Poisson objective, deterministic) added as a third model next to the
+flat baseline and Bayesian rates; selection on validation days, scored on unseen test days,
+UI model selector and comparison table, MCP `model` parameter. Real-data result: LightGBM
+best on test for SE, NE, Stoney Trail and Deerfoot & Glenmore; worse on Deerfoot Trail and
+collisions; validation picks Bayes for most slices. Tests: trend case selects LightGBM;
+sparse slices fall back.
+
+## MCP info and area focus (later October 3)
+
+`/mcp-info` on the MCP server (catalog from the live tool list; `?check=true` runs 10 safe
+tools — all ok, 60–350 ms — and lists 4 not run with reasons), mirrored at
+`/api/mcp-info`. Area filter (`lat`, `lon`, `radius_m`) on intersections, predictions and
+the two MCP tools; map dot click focuses 0.5/1/2 km; `mcp-info-ml` tab with per-area model
+comparison, per-model forecasts, LightGBM feature importance, 11-selection benchmark
+(`/api/ml/benchmark`) and MCP status. Browser-verified; 33 tests pass.

@@ -129,6 +129,150 @@ def economics(hours_saved: float, cost: float, scenario) -> dict:
     }
 
 
+# +-20% matches the demand stress check and a typical early-estimate contingency; +-50% is
+# the extreme. Exact break-evens (headroom, switch points) cover every value in between.
+COST_FACTORS = (0.5, 0.8, 1.0, 1.2, 1.5)
+BUDGET_FACTORS = (0.5, 0.8, 1.0, 1.2, 1.5)
+LEGACY_REASONS = {"budget": "budget", "guardrail": "cross_street", "Incomplete": "complete_trips"}
+
+
+def _pick(rows: list[dict], costs: dict, budget: float, guardrail: float) -> str:
+    """The planner's rule (lowest delay among options passing every check) at these costs."""
+    reference = rows[0]
+    eligible = [
+        r
+        for r in rows
+        if compare({**r, "capital_cost_cad": costs[r["id"]]}, reference, budget, guardrail)[
+            "feasible"
+        ]
+    ]
+    if not eligible:
+        return reference["id"]
+    return min(eligible, key=lambda r: (r["metrics"]["total_delay_s"], costs[r["id"]]))["id"]
+
+
+def cost_stress(rows: list[dict], recommended_id: str, scenario) -> dict:
+    """Does the recommendation survive cost and budget uncertainty? No re-simulation needed:
+    capital costs and the budget only enter the decision after the SUMO runs."""
+    budget, guardrail = scenario.budget_cad, scenario.cross_guardrail_pct
+    by_id = {r["id"]: r for r in rows}
+    rec = by_id[recommended_id]
+    base = {r["id"]: r["capital_cost_cad"] for r in rows}
+    label = rec["label"]
+
+    grid = [
+        [_pick(rows, {k: c * cf for k, c in base.items()}, budget * bf, guardrail)
+         for cf in COST_FACTORS]
+        for bf in BUDGET_FACTORS
+    ]  # fmt: skip
+    cells = [w for row in grid for w in row]
+    robust = sum(w == recommended_id for w in cells)
+
+    one_at_a_time = []
+    for r in rows[1:]:
+        for f in (0.5, 1.5):
+            winner = _pick(rows, {**base, r["id"]: base[r["id"]] * f}, budget, guardrail)
+            if winner != recommended_id:
+                one_at_a_time.append({"id": r["id"], "label": r["label"], "factor": f,
+                                      "winner_id": winner, "winner": by_id[winner]["label"]})  # fmt: skip
+
+    headroom = None
+    if recommended_id != rows[0]["id"] and base[recommended_id] > 0:
+        fallback = _pick(rows, {**base, recommended_id: math.inf}, budget, guardrail)
+        headroom = {
+            "cost_increase_pct": round(100 * (budget / base[recommended_id] - 1), 1),
+            "min_budget_cad": base[recommended_id],
+            "fallback_id": fallback,
+            "fallback": by_id[fallback]["label"],
+        }
+
+    # Lower-delay options rejected only by the budget win once they fit within it.
+    switch_points, blocked = [], []
+    for r in sorted(rows, key=lambda r: r["metrics"]["total_delay_s"]):
+        if r["metrics"]["total_delay_s"] >= rec["metrics"]["total_delay_s"]:
+            break
+        details = r["comparison"].get("rejection_details") or [
+            # Results saved before rejection_details existed carry only reason strings.
+            {"rule": rule, "message": reason}
+            for reason in r["comparison"].get("rejection_reasons", [])
+            for key, rule in LEGACY_REASONS.items()
+            if key in reason
+        ]
+        rules = {d["rule"] for d in details}
+        if rules == {"budget"}:
+            switch_points.append({
+                "id": r["id"], "label": r["label"], "needed_budget_cad": base[r["id"]],
+                "budget_increase_pct": round(100 * (base[r["id"]] / budget - 1), 1),
+                "cost_cut_pct": round(100 * (1 - budget / base[r["id"]]), 1),
+            })  # fmt: skip
+        elif rules:
+            reasons = [d["message"] for d in details
+                       if d["rule"] != "budget"]  # fmt: skip
+            blocked.append({"id": r["id"], "label": r["label"], "reason": "; ".join(reasons)})
+    switch_points.sort(key=lambda s: s["needed_budget_cad"])
+
+    economics_check = None
+    hours = rec["comparison"]["vehicle_hours_saved"]
+    if headroom and hours > 0:
+        yearly_hours = hours * scenario.occupancy * scenario.operating_days
+
+        def annualized(cost_factor):
+            return (
+                base[recommended_id] * cost_factor / scenario.asset_life_years
+                + scenario.annual_operating_cost_cad
+            )
+
+        def net(cost_factor, vot_factor):
+            return yearly_hours * scenario.value_of_time_cad * vot_factor - annualized(cost_factor)
+
+        economics_check = {
+            "net_annual_value_cad": round(net(1, 1), 2),
+            "worst_case_net_cad": round(net(1.5, 0.5), 2),
+            "worst_case": "costs +50% and value of time -50%",
+            "break_even_value_of_time_cad": round(annualized(1) / yearly_hours, 2),
+            "value_of_time_cad": scenario.value_of_time_cad,
+        }
+
+    if robust == len(cells):
+        verdict = (
+            f"Robust: {label} stays the recommendation for every tested combination of "
+            "costs and budget (each -50% to +50%)."
+        )
+    else:
+        parts = []
+        if headroom:
+            parts.append(
+                f"its cost rises more than {headroom['cost_increase_pct']:g}% "
+                f"(above ${budget:,.0f}), when {headroom['fallback']} takes over"
+            )
+        if switch_points:
+            s = switch_points[0]
+            parts.append(
+                f"the budget reaches ${s['needed_budget_cad']:,.0f} "
+                f"(+{s['budget_increase_pct']:g}%), when {s['label']} becomes affordable"
+            )
+        verdict = f"{label} wins in {robust} of {len(cells)} cost/budget combinations."
+        if parts:
+            verdict += " It changes if " + " or if ".join(parts) + "."
+    return {
+        "recommended_id": recommended_id,
+        "cost_factors": list(COST_FACTORS),
+        "budget_factors": list(BUDGET_FACTORS),
+        "grid": grid,
+        "robust_share_pct": round(100 * robust / len(cells), 1),
+        "verdict": verdict,
+        "headroom": headroom,
+        "switch_points": switch_points,
+        "blocked": blocked,
+        "one_at_a_time": one_at_a_time,
+        "economics": economics_check,
+        "method": "Re-applies the study rule (lowest modeled delay among options that pass "
+        "budget, cross-street and complete-trip checks) with every capital cost and the budget "
+        "scaled from -50% to +50%; simulated delays are unchanged because costs do not affect "
+        "traffic. One-at-a-time rows scale a single option's cost.",
+    }
+
+
 def aggregate(samples: list[dict]) -> dict:
     keys = (
         "total_delay_s",

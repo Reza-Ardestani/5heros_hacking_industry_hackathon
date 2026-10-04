@@ -46,6 +46,9 @@ def test_real_study_is_logged_to_database_and_jsonl(tmp_path):
     assert job["status"] == "completed", job["error"]
     result = job["result"]
     assert result["decision"]["recommended_id"] == result["recommended_id"]
+    stress = result["cost_stress"]
+    assert stress["recommended_id"] == result["recommended_id"] and len(stress["grid"]) == 5
+    assert stress["grid"][2][2] == result["recommended_id"]  # unchanged costs and budget
 
     run = store.get_sim(run_id)
     assert run["status"] == "completed" and run["origin"] == "test"
