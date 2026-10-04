@@ -416,10 +416,11 @@ make architecture    # Backend + frontend boundary checks
 make build           # TypeScript/Vite production build in frontend/dist
 ```
 
-`make test` also runs backend Ruff; the last recorded full lint has four existing
-executable-mode errors. Detailed scope and skipped tests are in the
-[backend](specs/features/clean-architecture-boundaries/progress.md) and
-[frontend](specs/features/frontend-vertical-slices/progress.md) evidence.
+`make test` runs both architecture guards, backend pytest, and full backend/script
+Ruff. `make test-web` runs the frontend regressions separately. Optional Timescale
+integration tests require Docker and explicit opt-in; see the
+[repository health checks](specs/features/repository-health/progress.md) for current
+verification and the [storage guide](docs/ops/storage.md) for database acceptance.
 
 If default ports are occupied, use the combined launcher with alternatives:
 

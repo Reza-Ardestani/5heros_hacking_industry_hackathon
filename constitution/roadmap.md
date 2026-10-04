@@ -46,6 +46,11 @@ entry points verified by tests/build and import guards.
 
 ## Later storage and modeling work
 
+October 4 user-authorized repository health corrections: fix confirmed launcher,
+lint and documentation defects while preserving the submitted issue and
+submission_artifacts/submission.md. No product behavior/model changes planned.
+[Spec](../specs/features/repository-health/requirements.md).
+
 October 4 user-authorized README/demo onboarding: present the problem, journeys,
 architecture images, datasets and bounded results using the submission structure;
 finish with verified Makefile commands for separate or combined API/UI startup.

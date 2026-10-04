@@ -13,4 +13,4 @@ Status: **Implemented budget/service checks; labor/equipment gating is proposed*
 - The no-change reference remains a fallback if no eligible improvement exists.
 - Changed assumptions mark old results stale until rerun.
 
-Source-level evidence: [frontend/src/components/DecisionExplain.tsx](../../../../frontend/src/components/DecisionExplain.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/studies/DecisionExplain.tsx](../../../../frontend/src/features/studies/DecisionExplain.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.

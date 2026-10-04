@@ -13,4 +13,4 @@ Status: **Existing local source; no new branch runtime acceptance**. This is not
 - Last-good observations remain labeled when refresh fails.
 - Observation date and retrieval date are distinguishable; refresh speed does not prove source freshness.
 
-Source-level evidence: [frontend/src/components/IntersectionExplorer.tsx](../../../../frontend/src/components/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.
+Source-level evidence: [frontend/src/features/intersections/IntersectionExplorer.tsx](../../../../frontend/src/features/intersections/IntersectionExplorer.tsx). See owning feature progress for executed checks; source inspection is not a new runtime test.

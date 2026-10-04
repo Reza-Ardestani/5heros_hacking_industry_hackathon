@@ -1,5 +1,10 @@
 # Progress
 
+October 4: repository health fixes verified: optional-MCP startup check, script
+lint/modes and seven source links corrected. 79 backend tests, 14 UI tests, build,
+full lint and both startup modes passed; submission untouched.
+[Evidence](../specs/features/repository-health/progress.md).
+
 October 4: README refreshed from submission structure with both architecture
 images and final Makefile run guide. Combined API/UI/MCP smoke check, local
 links and shutdown verified. [Evidence](../specs/features/readme-demo-onboarding/progress.md).
