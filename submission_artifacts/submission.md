@@ -78,6 +78,14 @@ Our main challenges are calibrating the synthetic simulation with measured Calga
 1. **Live webapp:** [Open Bottleneck Busters](https://bottleneck-busters-main-6xv7jvg66wh455x-8080.app.github.dev/). **Username:** `bottleneck` · **Password:** `XX5DIh2lfEFo`.
 2. **Live demo:** [Watch the demo video](https://youtu.be/mJIJ2JE7_00).
 
+## 9. What we learned
+
+- **Disruption data is context, not congestion measurement.** Incident records help us choose where to investigate, but measured traffic counts and signal timings are still needed to calibrate an intervention study.
+- **The lowest-delay plan is not always the right recommendation.** Our first signal proposal reduced modeled delay but exceeded the cross-street guardrail. Revising it showed why budget, trip completion, and impacts on other travelers must be part of the decision.
+- **More complex models do not win everywhere.** Comparing empirical Bayes and LightGBM against a flat baseline taught us to select models on validation data and show uncertainty, especially for sparse intersections.
+- **Agents need auditable tools.** Keeping calculations and constraints in code, with simulation outputs and an explicit trace, makes recommendations inspectable. Optional chat explains and navigates; it does not invent the numerical evidence.
+- **Clear boundaries helped us integrate quickly.** Backend interfaces and frontend feature slices kept related work together, while shared contracts and architecture checks reduced integration risk during the hackathon.
+
 ## Appendix:
 
 **GitHub repository:** [Bottleneck Busters — source code, architecture, and run instructions](https://github.com/Reza-Ardestani/5heros_hacking_industry_hackathon).
