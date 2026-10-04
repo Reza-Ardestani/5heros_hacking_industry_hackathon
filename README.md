@@ -13,7 +13,7 @@ cross-street impacts with an auditable report.
 
 [User journeys](#user-journeys) · [Architecture](#architecture-and-design) ·
 [Dataset](#dataset) · [Methods and algorithms](#methods-and-algorithms) ·
-[Results](#results) · [Run locally](#run-locally)
+[Results](#results) · [Run locally](#run-locally) · [Deployment guide](#deployment-guide)
 
 ## Introduction and problem statement
 
@@ -292,6 +292,15 @@ a financially attractive investment. Costs, occupancy, time value, and annualiza
 remain assumptions, and the corridor/default arrivals are synthetic. These results
 show the decision process, not observed savings on Calgary roads.
 
+**Budget changes can change the recommendation.** In the team's
+[demo video](https://youtu.be/mJIJ2JE7_00), increasing the budget to **CAD 5 million**
+made an extra-lane intervention eligible and the planner recommended it. The tool
+rechecks each option's estimated capital cost against the new budget, then selects
+the lowest modeled delay among options that also satisfy the cross-street and
+trip-completion constraints. A larger budget expands the feasible choices; it
+does not improve the incident forecast or establish real-world accuracy. The
+video's scenario is separate from the CAD 100,000 recorded experiment above.
+
 [Recorded simulation result](docs/demo/example_result.json) ·
 [Metric definitions](data/README.md#what-the-simulator-measures) ·
 [Current implementation evidence](constitution/progress.md)
@@ -452,15 +461,78 @@ Optional Claude chat reads `ANTHROPIC_API_KEY` from the backend environment;
 have no authentication. Jobs are in memory: restarting the API loses active and
 retained job handles, while study evidence remains in database tables/run logs.
 
-### Hosted demo options
+## Deployment guide
 
-[Codespaces configuration](.devcontainer/devcontainer.json) starts the combined
-UI/API on port 8080 behind a shared password, plus MCP on port 8000. The username
-is `bottleneck`; use the `BB_AUTH_PASSWORD` Codespaces secret or the generated
-password printed by the launcher. The Ports panel controls sharing visibility.
+### GitHub Codespaces demo
 
-The [Dockerfile](Dockerfile), [Cloud Run setup](deploy/setup-gcp.sh), and
-[deployment workflow](.github/workflows/deploy.yml) provide the container route.
-The frontend build alone does not start a server; `app.deploy:app` serves the
-built UI and API together. Local checks do not establish hosted deployment or
-field acceptance.
+The submission's shared webapp uses the Codespaces route. The
+[devcontainer configuration](.devcontainer/devcontainer.json) provisions Python
+3.12, Node.js 22, uv, and the Linux libraries needed by SUMO. The
+[launcher](.devcontainer/bb-start.sh) installs locked dependencies, builds the
+React frontend, and starts the combined UI/API on **port 8080** and the separate
+MCP server on **port 8000**.
+
+1. On GitHub, select the repository's **main** branch, then **Code → Codespaces →
+   Create codespace on main**. Allow the container setup and startup to finish.
+2. Set **`BB_AUTH_PASSWORD`** as a Codespaces secret for this repository if you
+   want to choose the shared demo password. Otherwise, the launcher generates
+   one, retains it in `~/.bb-site-password`, and displays it at startup. The
+   default username is **`bottleneck`**. Restart the Codespace after adding a
+   secret so the launcher receives it.
+3. Open the **Ports** panel and open port **8080** in a browser. To share it with
+   judges, set that port's visibility to **Public**, copy its forwarded HTTPS
+   URL, and provide the demo login separately. Keep port **8000 private**: it is
+   a separate MCP process and does not inherit the webapp's password gate.
+4. Check `/api/health`, sign in to the UI, then open the intersection view and
+   run a small study to verify the app and SUMO workflow.
+
+The combined entry point, [`app.deploy:app`](backend/app/deploy.py), serves the
+built frontend and API behind HTTP Basic authentication. Startup sets
+`BB_REQUIRE_AUTH=1`; missing password configuration fails closed. The health
+endpoint is deliberately accessible without a login. Building the frontend
+alone does not start the app server.
+
+To rebuild and restart the currently checked-out version from the Codespace
+terminal:
+
+```sh
+bb-start
+curl --fail http://127.0.0.1:8080/api/health
+```
+
+To fetch and rebuild the latest `main`, first commit or stash local edits, then
+run `bb-start main`. This command resets the local branch to `origin/main`; push
+any local commits you want to retain before using it. Application logs are in
+`/tmp/bb/app.log`; MCP logs are in `/tmp/bb/mcp.log`.
+
+### Data persistence and demo availability
+
+Committed exports seed the local SQLite database. Preserve **`data/db/`** and
+**`data/runs/`** for collected data and study evidence. An API restart loses
+in-memory simulation job handles; saved study evidence remains on disk. A
+Codespace's workspace survives stop/start, but deleting the Codespace removes
+that workspace, so export or back up evidence first. Keep the Codespace running
+during judging; its forwarded URL depends on that instance being available.
+Optional TimescaleDB setup and the shared SQLite authority are documented in the
+[storage guide](docs/ops/storage.md).
+
+### Optional Cloud Run deployment scaffold
+
+The repository also contains a [Dockerfile](Dockerfile), a
+[one-time Google Cloud setup script](deploy/setup-gcp.sh), and a
+[GitHub Actions workflow](.github/workflows/deploy.yml). This is an alternative
+deployment route; the submission link uses Codespaces. The Cloud Run route has
+not been verified by this documentation update.
+
+The setup script requires a billing-enabled project and authenticated `gcloud`
+access. It provisions Artifact Registry, runtime/deploy service accounts,
+keyless GitHub authentication, and a Secret Manager entry for the site password.
+It prints the four repository variables required by the workflow:
+`GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WIF_PROVIDER`, and `GCP_DEPLOY_SA`.
+
+Once configured, branch pushes trigger an image build and smoke checks before
+deployment. Branches receive tagged revisions; `main` takes the service's main
+traffic. The workflow limits the service to one instance and keeps CPU allocated
+for simulation work after HTTP responses. Its container filesystem does not
+provide durable SQLite storage across replacement; use the documented persistent
+host design or redesign persistence before relying on collected data there.
